@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::ops::Add;
+
 macro_rules! aoc_task {
     ($f:ident) => {
         println!("{}: {}", stringify!($f), $f())
@@ -12,7 +14,10 @@ fn main() {
     aoc_task!(day02a);
     aoc_task!(day02b);
     aoc_task!(day03a);
+    aoc_task!(day03b);
 }
+
+// Day01a {{{
 
 fn day01a() -> usize {
     include_str!("../input/day01a.txt")
@@ -23,6 +28,8 @@ fn day01a() -> usize {
         .filter(|w| w[0] < w[1])
         .count()
 }
+
+// }}}
 
 fn day01b() -> usize {
     include_str!("../input/day01b.txt")
@@ -97,8 +104,32 @@ fn day03a() -> u32 {
     gamma * epsilon
 }
 
-fn day3b() -> u32 {
-    10
+// Day 03 B
+
+
+fn day03b() -> u32 {
+
+    let report:Vec<_> = include_str!("../input/day03b.txt")
+        .lines()
+        .map(|l| l.chars().map(|v| v.to_digit(2).unwrap() as u32).collect::<Vec<u32>>())
+        .collect();
+
+    let width:usize = report[0].len();
+
+    let oxy = (0..width).scan(report.clone(), |rep, i| {
+                            let one: bool = rep.iter().filter(|v| v[i] == 1).count() >= (rep.len() + 1) / 2;
+                            rep.retain(|v| (v[i] == 1) != one);
+                            rep.first().cloned()
+                        }).last().unwrap();
+    let oxy = fold_binary_vec(oxy);
+
+    let co2 = (0..width).scan(report.clone(), |rep, i| {
+                            let one: bool = rep.iter().filter(|v| v[i] == 1).count() >= (rep.len() + 1) / 2;
+                            rep.retain(|v| (v[i] == 1) == one);
+                            rep.first().cloned()
+                        }).last().unwrap();
+    let co2= fold_binary_vec(co2);
+    oxy * co2
 }
 
 

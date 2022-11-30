@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
-use std::ops::Add;
+use took::took;
 
 macro_rules! aoc_task {
     ($f:ident) => {
-        println!("{}: {}", stringify!($f), $f())
+
+        let (took, result) = took($f);
+        println!("{} took: {} result: {}", stringify!($f), took, result);
     };
 }
 

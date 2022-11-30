@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
+
 use took::took;
+
+// aoc_task macro {{{
 
 macro_rules! aoc_task {
     ($f:ident) => {
@@ -9,6 +13,8 @@ macro_rules! aoc_task {
         println!("{} took: {} result: {}", stringify!($f), took, result);
     };
 }
+// }}}
+// main {{{
 
 fn main() {
     aoc_task!(day01a);
@@ -17,9 +23,12 @@ fn main() {
     aoc_task!(day02b);
     aoc_task!(day03a);
     aoc_task!(day03b);
+    aoc_task!(day04a);
+    aoc_task!(day04b);
 }
 
-// Day01a {{{
+// }}}
+// day01a {{{
 
 fn day01a() -> usize {
     include_str!("../input/day01a.txt")
@@ -32,6 +41,7 @@ fn day01a() -> usize {
 }
 
 // }}}
+// day01b {{{
 
 fn day01b() -> usize {
     include_str!("../input/day01b.txt")
@@ -46,10 +56,13 @@ fn day01b() -> usize {
         .count()
 }
 
+// }}}
+// day02a {{{
+
 fn day02a() -> i32 {
    let (h ,v) = include_str!("../input/day02a.txt")
                     .lines()
-                    .map(|l| l.split_once(" ").unwrap())
+                    .map(|l| l.split_once(' ').unwrap())
                     .fold((0, 0), |(h, v), (t, k)| {
                         match (t, k.parse::<i32>().unwrap() ){
                             ("forward", k) => (h, v + k),
@@ -62,11 +75,14 @@ fn day02a() -> i32 {
    h * v
 }
 
+// }}}
+// day02b {{{
+
 fn day02b() -> i32 {
 
    let (_, h ,v) = include_str!("../input/day02b.txt")
                     .lines()
-                    .map(|l| l.split_once(" ").unwrap())
+                    .map(|l| l.split_once(' ').unwrap())
                     .fold((0, 0, 0), |(a, h, v), (t, k)| {
                         match (t, k.parse::<i32>().unwrap() ){
                             ("forward", k) => (a, h + a * k, v + k),
@@ -77,6 +93,9 @@ fn day02b() -> i32 {
                     });
    h * v
 }
+
+// }}}
+// day03a {{{
 
 fn element_wise_add(a:Vec<u32>, b: Vec<u32>) -> Vec<u32> {
     a.iter().zip(b.iter()).map(|(a, b)| a + b).collect()
@@ -106,8 +125,8 @@ fn day03a() -> u32 {
     gamma * epsilon
 }
 
-// Day 03 B
-
+// }}}
+// day03b {{{
 
 fn day03b() -> u32 {
 
@@ -125,7 +144,7 @@ fn day03b() -> u32 {
                         }).last().unwrap();
     let oxy = fold_binary_vec(oxy);
 
-    let co2 = (0..width).scan(report.clone(), |rep, i| {
+    let co2 = (0..width).scan(report, |rep, i| {
                             let one: bool = rep.iter().filter(|v| v[i] == 1).count() >= (rep.len() + 1) / 2;
                             rep.retain(|v| (v[i] == 1) == one);
                             rep.first().cloned()
@@ -134,4 +153,78 @@ fn day03b() -> u32 {
     oxy * co2
 }
 
+// }}}
+// day04a {{{
 
+const D:usize = 5;
+const ROW: u32 = 0b11111;
+const COL: u32 = 0b100001000010000100001;
+
+fn day04a() -> u32 {
+
+    let (numbers, boards) = include_str!("../input/day04a.txt").split_once("\n\n").unwrap();
+
+    let mut boards: Vec<(HashMap<u8, usize>, u32)> = boards.split("\n\n")
+                       .map(|b| {
+                           (
+                               b.split_ascii_whitespace()
+                                .enumerate()
+                                .map(|(i, n)| (n.parse().unwrap(), i))
+                                .collect(),
+                                0
+                            )
+                       }).collect();
+
+    let (board, mark, number) = numbers
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .find_map(|n| {
+                boards.iter_mut().find_map(|(b, m)| {
+                    b.get(&n)
+                     .map(|i| *m |= 1 << i)
+                     .filter(|_| (0..D).any(|i| ((*m >> i) & COL) == COL || ((*m >> (i * D)) & ROW) == ROW))
+                     .map(|_| (b.clone(), *m, n))
+                })
+            }).unwrap();
+
+    board.into_iter()
+         .map(|(n, i)| (mark >> i & 1 ^ 1) * n as u32)
+         .sum::<u32>() * number as u32
+}
+
+// }}}
+// day04a {{{
+
+fn day04b() -> u32 {
+
+    let (numbers, boards) = include_str!("../input/day04a.txt").split_once("\n\n").unwrap();
+
+    let mut boards: Vec<(HashMap<u8, usize>, u32)> = boards.split("\n\n")
+                       .map(|b| {
+                           (
+                               b.split_ascii_whitespace()
+                                .enumerate()
+                                .map(|(i, n)| (n.parse().unwrap(), i))
+                                .collect(),
+                                0
+                            )
+                       }).collect();
+
+    let (board, mark, number) = numbers
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .map(|n| {
+                boards.iter_mut().map(|(b, m)| {
+                    b.get(&n)
+                     .map(|i| *m |= 1 << i)
+                     .filter(|_| (0..D).any(|i| ((*m >> i) & COL) == COL || ((*m >> (i * D)) & ROW) == ROW))
+                     .map(|_| (b.clone(), *m, n))
+                }).filter(|x| x.is_some()).last().unwrap_or(None)
+            }).filter(|x| x.is_some()).last().unwrap().unwrap();
+
+    board.into_iter()
+         .map(|(n, i)| (mark >> i & 1 ^ 1) * n as u32)
+         .sum::<u32>() * number as u32
+}
+
+// }}}

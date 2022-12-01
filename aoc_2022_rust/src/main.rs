@@ -22,49 +22,30 @@ fn main() {
 // day01a {{{
 
 fn day01a() -> i32 {
-    let max_calories = include_str!("../input/day01.txt")
-        .lines()
-        .fold(vec![0], |mut acc, l| {
-            match l.parse::<i32>() {
-                Ok(n) => {
-                    let i = acc.len() - 1;
-                    acc[i] += n;
-                }
-                Err(_) => acc.push(0),
-            }
-            acc
-        })
-        .iter()
-        .max()
-        .unwrap()
-        .to_owned();
-
-    max_calories
+    include_str!("../input/day01.txt")
+        .split("\n\n")
+        .map(|e| {
+            e.lines()
+             .map(|v| v.parse::<i32>().unwrap())
+             .sum()
+        }).max().unwrap()
 }
 
 // }}}
 // day01b {{{
 
 fn day01b() -> i32 {
-    let mut elven_calories =
-        include_str!("../input/day01.txt")
-            .lines()
-            .fold(vec![0], |mut acc, l| {
-                match l.parse::<i32>() {
-                    Ok(n) => {
-                        let i = acc.len() - 1;
-                        acc[i] += n;
-                    }
-                    Err(_) => acc.push(0),
-                }
-                acc
-            });
+     let mut elves: Vec<_> = include_str!("../input/day01.txt")
+        .split("\n\n")
+        .map(|e| {
+            e.lines()
+             .map(|v| v.parse::<i32>().unwrap())
+             .sum()
+        }).collect();
 
-    elven_calories.sort();
-    elven_calories.reverse();
-
-    let total_of_top_three = elven_calories.iter().take(3).sum();
-    total_of_top_three
+    elves.sort();
+    elves.reverse();
+    elves.iter().take(3).sum()
 }
 
 // }}}

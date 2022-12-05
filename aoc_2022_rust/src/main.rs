@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::{collections::HashMap, str::FromStr};
+use std::num::ParseIntError;
 use took::took;
 
 // aoc_task macro {{{
@@ -18,6 +20,12 @@ fn main() {
     aoc_task!(day01b);
     aoc_task!(day02a);
     aoc_task!(day02b);
+    aoc_task!(day03a);
+    aoc_task!(day03b);
+    aoc_task!(day04a);
+    aoc_task!(day04a_alt);
+    aoc_task!(day04b);
+    aoc_task!(day04b_alt);
 }
 
 // }}}
@@ -104,6 +112,158 @@ fn day02b() -> i32 {
                  _ => unreachable!()
              }
          }).sum()
+}
+
+// }}}
+// day03a {{{
+
+fn first_common_char(a: &str, b: &str) -> Option<char> {
+    for ch in a.chars() {
+        if b.contains(ch) {
+            return Some(ch);
+        }
+    }
+    None
+}
+
+
+fn day03a() -> i32 {
+
+    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..53).collect();
+    include_str!("../input/day03.txt")
+        .lines()
+        .map(|l| {
+            let (a, b) = l.split_at(l.len()/2);
+            let ch = first_common_char(a, b).unwrap();
+            map.get(&ch).unwrap()
+        }).sum()
+}
+
+// }}}
+// day03b {{{
+
+fn common_to_three(a: &str, b: &str, c: &str) -> Option<char> {
+
+    for ch in a.chars() {
+        if b.contains(ch) & c.contains(ch) {
+            return Some(ch);
+        }
+    }
+    None
+}
+
+fn day03b() -> i32 {
+
+    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..53).collect();
+    let lines: Vec<&str> = include_str!("../input/day03.txt") .lines().collect();
+
+    lines[..].chunks(3).map(|chunk| {
+        let ch = common_to_three(chunk[0], chunk[1], chunk[2]).unwrap();
+        map.get(&ch).unwrap()
+    }).sum()
+}
+
+// }}}
+// day04a {{{
+
+struct Range {
+    from: i32,
+    to: i32
+}
+
+impl FromStr for Range {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (from, to) = s.split_once('-').unwrap();
+        let from = from.parse::<i32>()?;
+        let to = to.parse::<i32>()?;
+
+        Ok(Range {
+            from,
+            to
+        })
+    }
+}
+
+fn day04a() -> i32 {
+
+    include_str!("../input/day04.txt")
+        .lines()
+        .map(|l| {
+            let (r1_str, r2_str) = l.split_once(",").unwrap();
+            let r1:Range = r1_str.parse().unwrap();
+            let r2:Range = r2_str.parse().unwrap();
+
+            if (r1.from <= r2.from) & (r1.to >= r2.to) || (r2.from <= r1.from) & (r2.to >= r1.to) {
+                1
+            } else {
+                0
+            }
+        }).sum()
+
+}
+
+fn day04a_alt() -> i32 {
+
+    include_str!("../input/day04.txt")
+        .lines()
+        .map(|l| {
+            let v:Vec<i32> = l.split(&['-', ','][..])
+                                .map(|v| v.parse().unwrap())
+                                .collect();
+            let (x1, y1, x2, y2) = (v[0], v[1], v[2], v[3]);
+
+            if x1 <= x2 && y1 >= y2 || x2 <= x1 && y2 >= y1 {
+                1
+            } else {
+                0
+            }
+
+        }).sum()
+
+
+}
+
+// }}}
+// day04b {{{
+
+
+fn day04b() -> i32 {
+
+    include_str!("../input/day04.txt")
+        .lines()
+        .map(|l| {
+            let (r1_str, r2_str) = l.split_once(",").unwrap();
+            let r1:Range = r1_str.parse().unwrap();
+            let r2:Range = r2_str.parse().unwrap();
+
+            if r1.from <= r2.to && r1.to >= r2.from {
+                1
+            } else {
+                0
+            }
+        }).sum()
+
+}
+
+fn day04b_alt() -> i32 {
+
+    include_str!("../input/day04.txt")
+        .lines()
+        .map(|l| {
+            let v:Vec<i32> = l.split(&['-', ','][..])
+                              .map(|v| v.parse().unwrap())
+                              .collect();
+            let (x1, y1, x2, y2) = (v[0], v[1], v[2], v[3]);
+
+            if x1 <= y2 && y1 >= x2 {
+                1
+            } else {
+                0
+            }
+
+        }).sum()
 }
 
 // }}}

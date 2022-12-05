@@ -3,6 +3,7 @@
 use std::{collections::HashMap, str::FromStr};
 use std::num::ParseIntError;
 use took::took;
+use regex::Regex;
 
 // aoc_task macro {{{
 
@@ -26,6 +27,8 @@ fn main() {
     aoc_task!(day04a_alt);
     aoc_task!(day04b);
     aoc_task!(day04b_alt);
+    aoc_task!(day05a);
+    aoc_task!(day05b);
 }
 
 // }}}
@@ -264,6 +267,120 @@ fn day04b_alt() -> i32 {
             }
 
         }).sum()
+}
+
+// }}}
+// day05a {{{
+
+#[derive(Debug)]
+struct WarehouseState {
+    piles: Vec<Vec<char>>
+}
+
+impl WarehouseState {
+    fn move_crate(&mut self, n:usize, from:usize, to: usize) {
+
+        for _ in 0..n {
+            let cr = self.piles[from-1].pop().unwrap();
+            self.piles[to-1].push(cr);
+        }
+    }
+
+    fn top_word(&self) -> String {
+        let mut s = String::new();
+
+        for pile in &self.piles {
+            s.push(*pile.last().unwrap());
+        }
+        s
+    }
+}
+
+impl FromStr for WarehouseState {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines: Vec<_> = s.lines()
+                             .map(|l| l.chars().enumerate().skip(1).fold(Vec::new(), |mut acc, (i, ch)| {
+                                 if (i - 1) % 4 ==  0 {
+                                    acc.push(ch);
+                                 }
+                                 acc
+                             } ))
+                             .rev()
+                             .collect();
+
+        let mut piles: Vec<Vec<char>> = Vec::new();
+        for _ in &lines[0] {
+            piles.push(Vec::new());
+        }
+
+        for l in lines.iter().skip(1) {
+            for (i, ch) in l.iter().enumerate() {
+                if ch.is_alphabetic() {
+                    piles[i].push(*ch);
+                }
+            }
+        }
+
+        Ok(WarehouseState {
+            piles
+        })
+    }
+}
+
+fn day05a() -> String {
+
+    let (state_str, move_str) = include_str!("../input/day05.txt").split_once("\n\n").unwrap();
+    let mut state: WarehouseState = state_str.parse().unwrap();
+
+    let move_re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
+
+    for cap in move_re.captures_iter(move_str) {
+        let n: usize = cap[1].parse().unwrap();
+        let from: usize = cap[2].parse().unwrap();
+        let to: usize = cap[3].parse().unwrap();
+        state.move_crate(n, from, to);
+    }
+
+    state.top_word()
+}
+
+
+
+// }}}
+// day05b {{{
+
+impl WarehouseState {
+
+    fn move_stack(&mut self, n:usize, from:usize, to: usize) {
+        let mut buf = Vec::new();
+
+        for _ in 0..n {
+            buf.push(self.piles[from-1].pop().unwrap());
+        }
+
+        for cr in buf.iter().rev() {
+            self.piles[to-1].push(*cr);
+        }
+    }
+}
+
+fn day05b() -> String {
+
+    let (state_str, move_str) = include_str!("../input/day05.txt").split_once("\n\n").unwrap();
+    let mut state: WarehouseState = state_str.parse().unwrap();
+
+    let move_re = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
+
+    for cap in move_re.captures_iter(move_str) {
+        let n: usize = cap[1].parse().unwrap();
+        let from: usize = cap[2].parse().unwrap();
+        let to: usize = cap[3].parse().unwrap();
+        state.move_stack(n, from, to);
+    }
+
+    state.top_word()
 }
 
 // }}}

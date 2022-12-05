@@ -24,9 +24,7 @@ fn main() {
     aoc_task!(day03a);
     aoc_task!(day03b);
     aoc_task!(day04a);
-    aoc_task!(day04a_alt);
     aoc_task!(day04b);
-    aoc_task!(day04b_alt);
     aoc_task!(day05a);
     aoc_task!(day05b);
 }

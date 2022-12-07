@@ -85,7 +85,35 @@ print("day05b:", "".join([pile[-1] for pile in state2]))
 
 # }}}
 
+#%% day07
 
+from collections import defaultdict
 
+lines = open("./input/day07.txt", 'rt').read().splitlines()
+curdir = ["/"]
+sizes = defaultdict(lambda: 0)
+for line in lines:
+    match line.split(" "):
+        case ["$", "cd", "/"]:
+            curdir = ["/"]
+        case ["$", "cd", ".."]:
+            curdir.pop()
+        case ["$", "cd", d]:
+            curdir.append(d)
+        case ["$", "ls"]:
+            pass
+        case ["dir", name]:
+            pass
+        case [size, filename]:
+            l = len(curdir)
+            for i in range(l):
+                path = '/'.join(curdir[:l - i])
+                sizes[path] += int(size)
+        case _:
+            print("unknown line")
+
+print(f"day07a: {sum([s for s in sizes.values() if s < 100000])}")
+need_to_free = 30000000 - (70000000 - sizes['/'])
+print(f"day07a: {min([s for s in sizes.values() if s > need_to_free])}")
 
 

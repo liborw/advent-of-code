@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, str::FromStr};
+use itertools::Itertools;
 use std::num::ParseIntError;
 use took::took;
 use regex::Regex;
@@ -27,6 +28,10 @@ fn main() {
     aoc_task!(day04b);
     aoc_task!(day05a);
     aoc_task!(day05b);
+    aoc_task!(day06a);
+    aoc_task!(day06b);
+    aoc_task!(day07a);
+    aoc_task!(day07b);
 }
 
 // }}}
@@ -119,18 +124,13 @@ fn day02b() -> i32 {
 // day03a {{{
 
 fn first_common_char(a: &str, b: &str) -> Option<char> {
-    for ch in a.chars() {
-        if b.contains(ch) {
-            return Some(ch);
-        }
-    }
-    None
+    a.chars().find(|&ch| b.contains(ch))
 }
 
 
 fn day03a() -> i32 {
 
-    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..53).collect();
+    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..=52).collect();
     include_str!("../input/day03.txt")
         .lines()
         .map(|l| {
@@ -144,18 +144,12 @@ fn day03a() -> i32 {
 // day03b {{{
 
 fn common_to_three(a: &str, b: &str, c: &str) -> Option<char> {
-
-    for ch in a.chars() {
-        if b.contains(ch) & c.contains(ch) {
-            return Some(ch);
-        }
-    }
-    None
+    a.chars().find(|&ch| b.contains(ch) & c.contains(ch))
 }
 
 fn day03b() -> i32 {
 
-    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..53).collect();
+    let map: HashMap<char, i32> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().zip(1..=52).collect();
     let lines: Vec<&str> = include_str!("../input/day03.txt") .lines().collect();
 
     lines[..].chunks(3).map(|chunk| {
@@ -192,17 +186,11 @@ fn day04a() -> i32 {
     include_str!("../input/day04.txt")
         .lines()
         .map(|l| {
-            let (r1_str, r2_str) = l.split_once(",").unwrap();
+            let (r1_str, r2_str) = l.split_once(',').unwrap();
             let r1:Range = r1_str.parse().unwrap();
             let r2:Range = r2_str.parse().unwrap();
-
-            if (r1.from <= r2.from) & (r1.to >= r2.to) || (r2.from <= r1.from) & (r2.to >= r1.to) {
-                1
-            } else {
-                0
-            }
+            i32::from((r1.from <= r2.from) & (r1.to >= r2.to) || (r2.from <= r1.from) & (r2.to >= r1.to))
         }).sum()
-
 }
 
 fn day04a_alt() -> i32 {
@@ -214,16 +202,8 @@ fn day04a_alt() -> i32 {
                                 .map(|v| v.parse().unwrap())
                                 .collect();
             let (x1, y1, x2, y2) = (v[0], v[1], v[2], v[3]);
-
-            if x1 <= x2 && y1 >= y2 || x2 <= x1 && y2 >= y1 {
-                1
-            } else {
-                0
-            }
-
+            i32::from(x1 <= x2 && y1 >= y2 || x2 <= x1 && y2 >= y1)
         }).sum()
-
-
 }
 
 // }}}
@@ -235,15 +215,11 @@ fn day04b() -> i32 {
     include_str!("../input/day04.txt")
         .lines()
         .map(|l| {
-            let (r1_str, r2_str) = l.split_once(",").unwrap();
+            let (r1_str, r2_str) = l.split_once(',').unwrap();
             let r1:Range = r1_str.parse().unwrap();
             let r2:Range = r2_str.parse().unwrap();
 
-            if r1.from <= r2.to && r1.to >= r2.from {
-                1
-            } else {
-                0
-            }
+            i32::from(r1.from <= r2.to && r1.to >= r2.from)
         }).sum()
 
 }
@@ -257,13 +233,7 @@ fn day04b_alt() -> i32 {
                               .map(|v| v.parse().unwrap())
                               .collect();
             let (x1, y1, x2, y2) = (v[0], v[1], v[2], v[3]);
-
-            if x1 <= y2 && y1 >= x2 {
-                1
-            } else {
-                0
-            }
-
+            i32::from(x1 <= y2 && y1 >= x2)
         }).sum()
 }
 
@@ -380,5 +350,68 @@ fn day05b() -> String {
 
     state.top_word()
 }
+
+// }}}
+// day06a {{{
+
+fn day06_solve(s: &str, winsize: usize) -> usize {
+    s.chars()
+     .collect::<Vec<char>>()
+     .windows(winsize)
+     .enumerate()
+     .find(|(_, slice)| slice.iter().unique().count() == winsize)
+     .unwrap().0 + winsize
+}
+
+fn day06a() -> usize {
+    day06_solve(include_str!("../input/day06.txt"), 4)
+}
+
+// }}}
+// day06b {{{
+
+
+fn day06b() -> usize {
+    day06_solve(include_str!("../input/day06.txt"), 14)
+}
+
+// }}}
+// day07a {{{
+
+fn day07_parse_tree(input: &str) -> HashMap<String, usize> {
+
+    let mut sizes:HashMap<String, usize> = HashMap::new();
+    let mut cd: Vec<&str> = vec!["/"];
+
+    input.lines()
+         .for_each(|l| match l.split_whitespace().collect::<Vec<_>>()[..] {
+             ["$", "cd", "/"] => {cd = vec!["/"];},
+             ["$", "cd", ".."] => {cd.pop();},
+             ["$", "cd", d] => {cd.push(d);},
+             ["$", "ls"] => {},
+             ["dir", _] => {},
+             [s, _] => {
+                 let s = s.parse::<usize>().unwrap();
+                 let l = cd.len();
+                 for i in 0..cd.len() {
+                     *sizes.entry(cd[0..(l - i)].join("/")).or_insert(0) += s;
+                 }
+             },
+             _ => println!("Unknown line: {:?}", l)
+         });
+    sizes
+}
+
+fn day07a() -> usize {
+    let sizes = day07_parse_tree(include_str!("../input/day07.txt"));
+    sizes.values().filter(|v| v < &&100000).sum::<usize>()
+}
+
+fn day07b() -> usize {
+    let sizes = day07_parse_tree(include_str!("../input/day07.txt"));
+    let need_to_free = 30000000 - (70000000 - sizes.get("/").unwrap());
+    *sizes.values().filter(|v| v > &&need_to_free).min().unwrap()
+}
+
 
 // }}}

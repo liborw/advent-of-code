@@ -32,6 +32,8 @@ fn main() {
     aoc_task!(day06b);
     aoc_task!(day07a);
     aoc_task!(day07b);
+    aoc_task!(day09a);
+    aoc_task!(day09b);
 }
 
 // }}}
@@ -413,5 +415,98 @@ fn day07b() -> usize {
     *sizes.values().filter(|v| v > &&need_to_free).min().unwrap()
 }
 
+
+// }}}
+// day08a TODO {{{
+
+fn day08_parse_rows(input: &str) -> Vec<Vec<usize>> {
+    input
+        .lines()
+        .map(|l| l.chars().map(|ch| ch.to_digit(10).unwrap() as usize).collect())
+        .collect()
+}
+
+
+fn day08_row_visibility(row: Vec<usize>) -> Vec<bool> {
+    let mut max = -1;
+
+    row.iter()
+       .map(|v| {
+           if *v as i32 > max {
+               max = *v as i32;
+               true
+           } else {
+               false
+           }
+       }).collect()
+}
+
+fn day08a() -> usize {
+
+    let table = day08_parse_rows(include_str!("../input/day08.txt"));
+    0
+}
+
+
+// }}}za
+// day09 {{{
+
+type Knot = (i32, i32);
+type Move = (char, i32);
+
+fn day09_move_tail(head: Knot, tail: Knot) -> Knot {
+
+    let dx = head.0 - tail.0;
+    let dy = head.1 - tail.1;
+
+    if dx.abs() >= 2 && dy == 0 {
+        (tail.0 + dx.signum(), tail.1)
+    } else if dx == 0 && dy.abs() >= 2 {
+        (tail.0, tail.1 + dy.signum())
+    } else if dx.abs() >= 2 || dy.abs() >= 2 {
+        (tail.0 + dx.signum(), tail.1 + dy.signum())
+    } else {
+        tail
+    }
+}
+
+fn day09_input() -> Vec<Move> {
+    include_str!("../input/day09.txt")
+        .lines()
+        .map(|l| {
+            let (d, n) = l.split_once(' ').unwrap();
+            (d.chars().next().unwrap(), n.parse::<i32>().unwrap())
+        }).collect()
+}
+
+fn day09_solve(n: usize) -> usize {
+    let mut knots: Vec<Knot> = (0..n).map(|_| (0, 0)).collect();
+    let mut history: Vec<Knot> = vec![knots[0]];
+
+    day09_input().iter().for_each(|m| {
+        for _ in 0..m.1 {
+            match m.0 {
+                'R' => knots[0] = (knots[0].0 + 1, knots[0].1),
+                'L' => knots[0] = (knots[0].0 - 1, knots[0].1),
+                'U' => knots[0] = (knots[0].0, knots[0].1 + 1),
+                'D' => knots[0] = (knots[0].0, knots[0].1 - 1),
+                _ => unreachable!()
+            }
+            for i in 1..n {
+                knots[i] = day09_move_tail(knots[i-1], knots[i]);
+            }
+            history.push(*knots.last().unwrap());
+        }
+    });
+    history.iter().unique().count()
+}
+
+fn day09a() -> usize {
+    day09_solve(2)
+}
+
+fn day09b() -> usize {
+    day09_solve(10)
+}
 
 // }}}

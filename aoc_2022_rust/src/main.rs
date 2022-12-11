@@ -34,6 +34,10 @@ fn main() {
     aoc_task!(day07b);
     aoc_task!(day09a);
     aoc_task!(day09b);
+    aoc_task!(day10a);
+    aoc_task!(day10b);
+    aoc_task!(day11a);
+    aoc_task!(day11b);
 }
 
 // }}}
@@ -417,7 +421,7 @@ fn day07b() -> usize {
 
 
 // }}}
-// day08a TODO {{{
+// day08 TODO {{{
 
 fn day08_parse_rows(input: &str) -> Vec<Vec<usize>> {
     input
@@ -509,4 +513,242 @@ fn day09b() -> usize {
     day09_solve(10)
 }
 
+// }}}
+// day10 {{{
+
+
+fn day10_input() -> Vec<i32> {
+
+    let mut x: i32 = 1;
+    let mut hist_x: Vec<i32> = vec![x];
+
+    include_str!("../input/day10.txt")
+        .lines()
+        .for_each(|l| match l.split(' ').collect::<Vec<&str>>()[..] {
+                    ["noop"] => {
+                        hist_x.push(x);
+                    },
+                    ["addx", v] => {
+                        hist_x.push(x);
+                        hist_x.push(x);
+                        x += v.parse::<i32>().unwrap();
+                    }
+                    _ => unreachable!()
+        });
+    hist_x
+}
+
+fn day10a() -> i32 {
+    day10_input()
+        .iter()
+        .enumerate()
+        .skip(20)
+        .step_by(40)
+        .map(|(i, &x)| i as i32 * x)
+        .sum()
+}
+
+
+fn day10b() -> i32 {
+
+    let mut crt: Vec<char>  = ".".repeat(241).chars().collect();
+
+    day10_input()
+        .iter()
+        .enumerate()
+        .for_each(|(i, &x)| {
+            if (x - ((i as i32 - 1) % 40)).abs() <= 1 {
+                crt[i] = '#';
+            }
+        });
+
+
+    for i in 0..6 {
+        println!("{:03} ->  {:} <- {:03}", i*40,  &crt[1+i*40..1+(i+1)*40].iter().collect::<String>(), (i+1)*40);
+    }
+
+    0
+}
+
+
+
+// }}}
+// day11 {{{
+
+#[derive(Debug)]
+enum Operation {
+    Add(i64),
+    Mult(i64),
+    Power,
+}
+
+impl Operation {
+    fn apply(&self, v: i64) -> i64 {
+        match self {
+            Operation::Add(n) => v+n,
+            Operation::Mult(n) => v*n,
+            Operation::Power => v*v,
+        }
+    }
+}
+
+impl FromStr for Operation {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_whitespace().collect::<Vec<_>>()[..] {
+            ["Operation:", "new", "=", "old", "+", n] => Ok(Operation::Add(n.parse()?)),
+            ["Operation:", "new", "=", "old", "*", "old"] => Ok(Operation::Power),
+            ["Operation:", "new", "=", "old", "*", n] => Ok(Operation::Mult(n.parse()?)),
+            _ => {
+                println!("{:?}", s);
+                unreachable!();
+            }
+        }
+    }
+}
+
+
+#[derive(Debug)]
+enum Condition {
+    Divisible(i64),
+}
+
+impl Condition {
+    fn apply(&self, v: i64) -> bool {
+        match self {
+            Condition::Divisible(n) => v % n == 0,
+        }
+    }
+
+    fn value(&self) -> i64 {
+        match self {
+            Condition::Divisible(n) => *n,
+        }
+    }
+}
+
+impl FromStr for Condition {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_whitespace().collect::<Vec<_>>()[..] {
+            ["Test:", "divisible", "by", n] => Ok(Condition::Divisible(n.parse()?)),
+            _ => unreachable!()
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Monkey {
+    id: usize,
+    items: Vec<i64>,
+    operation: Operation,
+    condition: Condition,
+    if_true_pass_to: usize,
+    if_false_pass_to: usize,
+    inspected_items: usize
+}
+
+// Monkey 0:
+//  Starting items: 79, 98
+//  Operation: new = old * 19
+//  Test: divisible by 23
+//    If true: throw to monkey 2
+//    If false: throw to monkey 3
+
+impl FromStr for Monkey {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines: Vec<_> = s.lines().collect();
+
+        let id: usize = lines[0].chars().collect::<Vec<char>>()[7].to_digit(10).unwrap() as usize;
+        let items: Vec<i64> = lines[1].split([':', ',']).skip(1)
+                                      .map(|v| v[1..].parse().unwrap())
+                                      .collect();
+        let operation: Operation = lines[2].parse().unwrap();
+        let condition: Condition = lines[3].parse().unwrap();
+
+        let if_true: usize = lines[4].split_whitespace().last().unwrap().parse().unwrap();
+        let if_false: usize = lines[5].split_whitespace().last().unwrap().parse().unwrap();
+
+        Ok(Monkey {
+            id,
+            items,
+            operation,
+            condition,
+            if_true_pass_to: if_true,
+            if_false_pass_to: if_false,
+            inspected_items: 0
+        })
+    }
+
+}
+
+fn day11_input() -> Vec<Monkey> {
+    include_str!("../input/day11.txt")
+        .split("\n\n")
+        .map(|s| s.parse::<Monkey>().unwrap())
+        .collect()
+}
+
+fn day11a() -> usize {
+    let mut monkeys = day11_input();
+
+    (0..20).for_each(|_| {
+        for i in 0..monkeys.len() {
+
+            while let Some(mut v) = monkeys[i].items.pop() {
+                let j;
+                {
+                    let mut m = &mut monkeys[i];
+                    m.inspected_items += 1;
+                    v = m.operation.apply(v);
+                    v = v / 3;
+
+                    if m.condition.apply(v) {
+                        j = m.if_true_pass_to;
+                    } else {
+                        j = m.if_false_pass_to;
+                    }
+                }
+                monkeys[j].items.push(v);
+            }
+
+        }
+    });
+
+    monkeys.iter().map(|m| m.inspected_items).sorted().rev().take(2).product()
+}
+
+fn day11b() -> usize {
+    let mut monkeys = day11_input();
+    let n: i64 = monkeys.iter().map(|m| m.condition.value()).product();
+
+    (0..10_000).for_each(|_| {
+        for i in 0..monkeys.len() {
+
+            while let Some(mut v) = monkeys[i].items.pop() {
+                let j;
+                {
+                    let mut m = &mut monkeys[i];
+                    m.inspected_items += 1;
+                    v = m.operation.apply(v);
+                    v = v % n;
+
+                    if m.condition.apply(v) {
+                        j = m.if_true_pass_to;
+                    } else {
+                        j = m.if_false_pass_to;
+                    }
+                }
+                monkeys[j].items.push(v);
+            }
+
+        }
+    });
+
+    monkeys.iter().map(|m| m.inspected_items).sorted().rev().take(2).product()
+}
 // }}}

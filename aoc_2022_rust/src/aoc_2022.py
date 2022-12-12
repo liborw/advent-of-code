@@ -230,7 +230,7 @@ visible = np.any(np.stack(apply(visibility, table, bool), axis=2), axis=2)
 print(f"day08a: {np.count_nonzero(visible)}")
 score = np.prod(np.stack(apply(scenic_score, table, int), axis=2), axis=2)
 print(f"day08b: {np.max(score[:])}")
-
+# }}}
 #%% day09 {{{
 
 from copy import deepcopy
@@ -278,10 +278,83 @@ print(f"day09b: {len(set([knots[-1] for knots in history]))}")
 
 
 # }}}
+#%% day12
+
+import numpy as np
+
+with open("./input/day12.txt") as f:
+    lines = f.read().splitlines()
+
+print('\n'.join(lines))
+
+table = np.ones((len(lines), len(lines[0])), dtype=int)
+start = None
+goal = None
+for i, l in enumerate(lines):
+    for j, ch in enumerate(l):
+        if ch == 'S':
+            start = (i,j)
+            ch = 'a'
+        if ch == 'E':
+            goal = (i,j)
+            ch = 'z'
+        table[i,j] = ord(ch) - ord('a')
+
+
+
+def expand(table, s) -> list[tuple[int, int]]:
+    i0, j0 = s
+    cnds = []
+    if i0 + 1 < table.shape[0]:
+        cnds.append((i0 + 1, j0))
+    if i0 > 0:
+        cnds.append((i0 - 1, j0))
+    if j0 + 1 < table.shape[1]:
+        cnds.append((i0, j0 + 1))
+    if j0 > 0:
+        cnds.append((i0, j0 - 1))
+
+    cnds = [(i, j) for i, j in cnds if table[i,j] - 1 <= table[i0,j0]]
+
+    return cnds
+
+
+def bfs(table, start, goal):
+    visited = np.zeros_like(table, dtype=bool)
+    visited[start[0], start[1]] = True
+    queue = [start]
+    parrent = dict()
+    parrent[tuple(start)] = None
+    while len(queue) > 0:
+        node = queue.pop(0)
+        if np.allclose(node, goal):
+            i = 0
+            while parrent[node] is not None:
+                i += 1
+                node = parrent[node]
+            return i
+        for n in expand(table, node):
+            i,j = n
+            if not visited[i,j]:
+                queue.append(n)
+                visited[i,j] = True
+                parrent[tuple(n)] = tuple(node)
+    return None
+
+
+
+print(f"day12a: {bfs(table, start, goal)}")
+
+starts = []
+for i in range(table.shape[0]):
+    for j in range(table.shape[1]):
+        if table[i,j] == 0:
+            starts.append((i,j))
+
+print(f"day12b: {min(map(lambda s : bfs(table, s, goal), starts))}")
 
 
 
 
-
-
+#
 

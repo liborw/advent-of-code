@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, collections::HashSet};
 use itertools::Itertools;
 use std::num::ParseIntError;
 use took::took;
@@ -38,6 +38,7 @@ fn main() {
     aoc_task!(day10b);
     aoc_task!(day11a);
     aoc_task!(day11b);
+    aoc_task!(day12a);
 }
 
 // }}}
@@ -751,4 +752,88 @@ fn day11b() -> usize {
 
     monkeys.iter().map(|m| m.inspected_items).sorted().rev().take(2).product()
 }
+// }}}
+// day12 {{{
+
+fn ord(ch: char) -> u8 {
+    (ch as i32 - 'a' as i32) as u8
+}
+
+fn day12_expand(table: Vec<Vec<u8>>, x: (usize, usize)) -> Vec<(usize, usize)> {
+    let (i0, j0) = x;
+    let mut cnd = Vec::new();
+
+    if i0 + 1 < table.len() {
+        cnd.push((i0+1, j0));
+    }
+
+    if i0 > 0 {
+        cnd.push((i0-1, j0));
+    }
+
+    if j0 + 1 < table[0].len() {
+        cnd.push((i0, j0+1));
+    }
+
+    if j0 > 0 {
+        cnd.push((i0, j0-1));
+    }
+
+    cnd = cnd.into_iter().filter(|(i, j)| {
+        table[*i][*j] - 1 <= table[i0][j0]
+    }).collect();
+
+    cnd
+}
+
+fn day12_bfs(table: Vec<Vec<u8>>, start: (usize, usize), goal: (usize, usize)) -> u32 {
+
+    let mut visited = HashSet::new();
+    let mut parrent = HashMap::new();
+    let mut queue = vec![start];
+
+    visited.insert(start);
+
+    while queue.len() > 0 {
+
+
+
+    }
+
+
+
+    1
+}
+
+fn day12a() -> usize {
+
+    let mut start: (usize, usize) = (0, 0);
+    let mut goal: (usize, usize) = (0, 0);
+    let table: Vec<Vec<u8>>  = include_str!("../input/day12_test.txt")
+        .lines()
+        .enumerate()
+        .map(|(i, l)| {
+            l.chars().enumerate().map(|(j, ch)| {
+                if ch == 'S' {
+                    start = (i, j);
+                    return ord('a');
+                }
+                if ch == 'E' {
+                    goal = (i, j);
+                    return ord('z');
+                }
+                ord(ch)
+            }).collect()
+        }).collect();
+
+
+
+
+    println!("{:?}", table);
+    1
+}
+
+
+
+
 // }}}

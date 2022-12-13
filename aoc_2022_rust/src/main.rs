@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, str::FromStr, collections::HashSet};
+use std::{collections::HashMap, str::FromStr, collections::{HashSet, VecDeque}};
 use itertools::Itertools;
 use std::num::ParseIntError;
 use took::took;
@@ -39,6 +39,7 @@ fn main() {
     aoc_task!(day11a);
     aoc_task!(day11b);
     aoc_task!(day12a);
+    aoc_task!(day12b);
 }
 
 // }}}
@@ -755,11 +756,11 @@ fn day11b() -> usize {
 // }}}
 // day12 {{{
 
-fn ord(ch: char) -> u8 {
-    (ch as i32 - 'a' as i32) as u8
+fn ord(ch: char) -> i8 {
+    (ch as i32 - 'a' as i32) as i8
 }
 
-fn day12_expand(table: Vec<Vec<u8>>, x: (usize, usize)) -> Vec<(usize, usize)> {
+fn day12_expand(table: &Vec<Vec<i8>>, x: (usize, usize)) -> Vec<(usize, usize)> {
     let (i0, j0) = x;
     let mut cnd = Vec::new();
 
@@ -786,30 +787,54 @@ fn day12_expand(table: Vec<Vec<u8>>, x: (usize, usize)) -> Vec<(usize, usize)> {
     cnd
 }
 
-fn day12_bfs(table: Vec<Vec<u8>>, start: (usize, usize), goal: (usize, usize)) -> u32 {
+type Pos = (usize, usize);
+type Table = Vec<Vec<i8>>;
+
+
+fn day12_bfs<FNA, FNB>(table: &Table,
+             start: Pos,
+             expand: FNA,
+             is_goal: FNB) -> Option<u32>
+    where FNA: Fn(&Table, Pos) -> Vec<Pos>,
+          FNB: Fn(Pos) -> bool
+
+{
 
     let mut visited = HashSet::new();
     let mut parrent = HashMap::new();
-    let mut queue = vec![start];
+    let mut queue = VecDeque::new();
 
     visited.insert(start);
+    queue.push_back(start);
 
     while queue.len() > 0 {
+        let mut n = queue.pop_front().unwrap();
 
+        if is_goal(n) {
 
+            let mut i = 0;
+            while let Some(&prev) = parrent.get(&n) {
+                n = prev;
+                i += 1;
+            }
+            return Some(i);
+        }
 
+        for next in expand(&table, n).into_iter() {
+            if visited.insert(next) {
+                parrent.insert(next, n);
+                queue.push_back(next);
+            }
+        }
     }
-
-
-
-    1
+    None
 }
 
-fn day12a() -> usize {
+fn day12a() -> u32 {
 
-    let mut start: (usize, usize) = (0, 0);
-    let mut goal: (usize, usize) = (0, 0);
-    let table: Vec<Vec<u8>>  = include_str!("../input/day12_test.txt")
+    let mut start: Pos = (0, 0);
+    let mut goal: Pos = (0, 0);
+    let table: Vec<Vec<i8>>  = include_str!("../input/day12.txt")
         .lines()
         .enumerate()
         .map(|(i, l)| {
@@ -828,11 +853,62 @@ fn day12a() -> usize {
 
 
 
-
-    println!("{:?}", table);
-    1
+    day12_bfs(&table, start, day12_expand, |p| p == goal ).unwrap()
 }
 
+fn day12b_expand(table: &Vec<Vec<i8>>, x: (usize, usize)) -> Vec<(usize, usize)> {
+    let (i0, j0) = x;
+    let mut cnd = Vec::new();
+
+    if i0 + 1 < table.len() {
+        cnd.push((i0+1, j0));
+    }
+
+    if i0 > 0 {
+        cnd.push((i0-1, j0));
+    }
+
+    if j0 + 1 < table[0].len() {
+        cnd.push((i0, j0+1));
+    }
+
+    if j0 > 0 {
+        cnd.push((i0, j0-1));
+    }
+
+    cnd = cnd.into_iter().filter(|(i, j)| {
+        table[*i][*j] >= table[i0][j0] - 1
+    }).collect();
+
+    cnd
+}
+
+
+fn day12b() -> u32 {
+
+    let mut start: Pos = (0, 0);
+    let mut goal: Pos = (0, 0);
+    let table: Vec<Vec<i8>>  = include_str!("../input/day12.txt")
+        .lines()
+        .enumerate()
+        .map(|(i, l)| {
+            l.chars().enumerate().map(|(j, ch)| {
+                if ch == 'S' {
+                    start = (i, j);
+                    return ord('a');
+                }
+                if ch == 'E' {
+                    goal = (i, j);
+                    return ord('z');
+                }
+                ord(ch)
+            }).collect()
+        }).collect();
+
+
+
+    day12_bfs(&table, goal, day12b_expand, |(i,j)| table[i][j] == 0 ).unwrap()
+}
 
 
 

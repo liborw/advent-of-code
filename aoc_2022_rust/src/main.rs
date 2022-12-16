@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, str::FromStr, collections::{HashSet, VecDeque}};
+use std::{collections::HashMap, str::FromStr, collections::{HashSet, VecDeque}, fmt::Display};
 use itertools::Itertools;
 use std::num::ParseIntError;
 use took::took;
@@ -40,6 +40,93 @@ fn main() {
     aoc_task!(day11b);
     aoc_task!(day12a);
     aoc_task!(day12b);
+    aoc_task!(day13a);
+    aoc_task!(day13b);
+    aoc_task!(day15a);
+}
+
+// }}}
+// utils {{{
+
+struct NameMap
+{
+    names: HashMap<String, usize>,
+    index: usize
+}
+
+impl NameMap {
+
+    fn new() -> Self {
+        NameMap {
+            names: HashMap::new(),
+            index: 0
+        }
+    }
+
+    fn get(&mut self, name: String) -> usize {
+        let i = self.names.entry(name).or_insert(self.index).to_owned();
+        self.index += 1;
+        i
+    }
+}
+
+impl<const N: usize> From<[&str; N]> for NameMap {
+
+    fn from(arr: [&str; N]) -> Self {
+        let mut map = NameMap::new();
+        for v in arr {
+            map.get(v.to_string());
+        }
+        map
+    }
+}
+
+#[derive(Debug)]
+struct BoundingBox<T>{
+    xmin: T,
+    ymin: T,
+    xmax: T,
+    ymax: T
+}
+
+impl BoundingBox<i32> {
+
+    fn new(xmin:i32, ymin:i32, xmax:i32, ymax:i32) -> Self {
+        BoundingBox { xmin, ymin, xmax, ymax }
+    }
+
+    fn zero() -> Self {
+        BoundingBox {xmin: i32::MAX, ymin: i32::MAX, xmax: i32::MIN, ymax: i32::MIN }
+    }
+
+    fn push(&mut self, (x, y): (i32, i32)) -> () {
+        if self.xmin > x {self.xmin = x};
+        if self.xmax < x {self.xmax = x};
+        if self.ymin > y {self.ymin = y};
+        if self.ymax < y {self.ymax = y};
+    }
+}
+
+type SparseMap<T> = HashMap<(i32, i32), T>;
+
+
+fn sparsemap_bb<T>(map: &SparseMap<T>) -> BoundingBox<i32> {
+    let mut bb = BoundingBox::zero();
+    for p in map.keys() {
+        bb.push(*p);
+    }
+    bb
+}
+
+fn sparsemap_print<T: Display>(map: &SparseMap<T>, default: T) -> () {
+    let bb = sparsemap_bb(map);
+
+    for y in bb.ymin-1..=bb.ymax+1 {
+        for x in bb.xmin-1..=bb.xmax+1 {
+            print!("{}", map.get(&(x,y)).unwrap_or(&default));
+        }
+        println!();
+    }
 }
 
 // }}}
@@ -910,6 +997,282 @@ fn day12b() -> u32 {
     day12_bfs(&table, goal, day12b_expand, |(i,j)| table[i][j] == 0 ).unwrap()
 }
 
+
+
+// }}}
+// day13 {{{
+
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum NestedList {
+    Empty,
+    Value(i32),
+    List(Vec<NestedList>),
+}
+
+impl FromStr for NestedList {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use NestedList::*;
+
+        let tokens = Regex::new(r"[\[\]]|\d+").unwrap();
+        let mut stack = vec![];
+        let mut list = Empty;
+
+        for token in tokens.captures_iter(&s) {
+            match (&token[0], &mut list) {
+                ("[", Empty) => {
+                    list = List(vec![]);
+                }
+                ("[", List(_)) => {
+                    stack.push(list);
+                    list = List(vec![]);
+                }
+                ("[", _) => unreachable!(),
+                ("]", List(_)) => {
+                    if let Some(mut nl) = stack.pop() {
+                        if let List(li) = &mut nl {
+                            li.push(list);
+                            list = nl;
+                        }
+                    } else {
+                        return Ok(list);
+                    }
+                }
+                ("]", _) => unreachable!(),
+                (num, List(li)) => {
+                    li.push(Value(num.parse().unwrap()));
+                }
+                _ => unreachable!()
+            }
+        }
+        Ok(Empty)
+    }
+}
+
+impl PartialOrd for NestedList {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        use NestedList::*;
+        use Ordering::*;
+        match (self, other) {
+            (Empty, Empty) => Some(Equal),
+            (Empty, _) => Some(Less),
+            (_, Empty) => Some(Greater),
+            (Value(v1), Value(v2)) => v1.partial_cmp(v2),
+            (List(li), Value(v)) => li.partial_cmp(&vec![Value(*v)]),
+            (Value(v), List(li)) => vec![Value(*v)].partial_cmp(li),
+            (List(li1), List(li2)) => li1.partial_cmp(li2),
+        }
+    }
+}
+
+impl Display for NestedList {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use NestedList::*;
+        match self {
+            Value(v) => v.fmt(f),
+            Empty => write!(f, "[]"),
+            List(li) => {
+
+                if li.is_empty() {
+                    return write!(f, "[]");
+                }
+
+                let mut str = String::new();
+                str.push_str(&"[".to_string());
+                for v in &li[0..li.len()-1] {
+                    str.push_str(&v.to_string());
+                    str.push_str(&", ".to_string());
+                }
+
+                str.push_str(&li[li.len()-1].to_string());
+                str.push_str(&"]".to_string());
+                write!(f, "{}", str)
+            }
+        }
+    }
+}
+
+
+impl Ord for NestedList {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+fn day13_input() -> Vec<NestedList>  {
+    include_str!("../input/day13.txt")
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| l.parse().unwrap())
+        .collect()
+}
+
+fn day13a() -> i32 {
+    day13_input()[..]
+        .chunks(2)
+        .enumerate()
+        .map(|(i, chunk)| {
+            if chunk[0] <= chunk[1] {
+                i as i32 + 1
+            } else {
+                0
+            }
+        }).sum()
+}
+
+fn day13b() -> i32 {
+    let mut input = day13_input();
+    let divider2: NestedList = "[[2]]".parse().unwrap();
+    let divider6: NestedList = "[[6]]".parse().unwrap();
+    input.push(divider2.clone());
+    input.push(divider6.clone());
+    input.sort();
+
+    input.iter()
+         .enumerate()
+         .fold(1, |acc, (i, v)| {
+             if (v == &divider2) | (v == &divider6) {
+                 acc * (i as i32 + 1)
+             } else {
+                 acc
+             }
+         })
+}
+
+// }}}
+// day14 {{{
+
+type Loc = (i32, i32);
+
+struct CaveMap {
+    y_max: i32,
+    map: HashMap<Loc, char>,
+}
+
+impl CaveMap {
+
+    fn bb(&self) -> (i32, i32, i32, i32) {
+        let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
+
+        for (xi, yi) in self.map.keys() {
+            if x0 > *xi {x0 = *xi};
+            if x1 < *xi {x1 = *xi};
+            if y0 > *yi {y0 = *yi};
+            if y1 > *yi {y1 = *yi};
+        }
+        (x0, y0, x1, y1)
+    }
+
+}
+
+// }}}
+// day15 {{{
+
+struct Sensor {
+    x: i32,
+    y: i32,
+    r: i32
+}
+
+struct Beacon {
+    x: i32,
+    y: i32
+}
+
+fn day15_input() -> Vec<(Sensor, Beacon)> {
+    let tokens = Regex::new(r"(-?\d+)").unwrap();
+    include_str!("../input/day15_test.txt")
+        .lines()
+        .map(|l| {
+
+            let v: Vec<i32> = tokens
+                .captures_iter(l)
+                .map(|c| c[1].parse().unwrap())
+                .collect();
+
+            let x = v[0];
+            let y = v[1];
+            let bx = v[2];
+            let by = v[3];
+            let r = (x - bx).abs() + (y - by).abs();
+
+            (Sensor{x, y, r}, Beacon{x:bx, y:by})
+        }).collect()
+}
+
+fn day15a() -> u32 {
+    let sb = day15_input();
+    let y0 = 10;
+    let mut map: SparseMap<char> = SparseMap::new();
+
+    for (s, b) in sb {
+
+        let x0 = s.x - (s.r - (s.y - y0).abs());
+        let x1 = s.x + (s.r - (s.y - y0).abs());
+
+        for x in x0..x1 {
+            map.insert((x,y0), '#');
+        }
+
+        map.insert((b.x, b.y), 'B');
+        map.insert((s.x, s.y), 'S');
+    }
+
+
+    let mut cnt = 0;
+    let bb = sparsemap_bb(&map);
+    for x in bb.xmin..=bb.xmax {
+        if map.contains_key(&(x,y0)) {
+            cnt += 1;
+        }
+    }
+    cnt
+}
+
+
+// }}}
+// day16 {{{
+
+#[derive(Debug, Clone)]
+struct Valve {
+    id: usize,
+    next: Vec<usize>,
+    flow: i32
+}
+
+fn day16_input() -> Vec<Valve> {
+    let mut nmap: NameMap = ["AA"].into();
+    let tokens = Regex::new(r"(\d+|[A-Z]{2})").unwrap();
+    include_str!("../input/day16_test.txt")
+        .lines()
+        .map(|l| {
+            let capture: Vec<_> = tokens.captures_iter(l).collect();
+            let mut next = vec![];
+            for i in 2..capture.len() {
+                next.push(nmap.get(capture[i][1].to_string()));
+            }
+
+            Valve{
+                id: nmap.get(capture[0][1].to_string()),
+                flow: capture[1][1].parse().unwrap(),
+                next
+            }
+
+        })
+        .sorted_by_key(|v| v.id)
+        .collect()
+}
+
+
+fn day16a() -> i32 {
+    let _valves = dbg!(day16_input());
+
+
+    0
+}
 
 
 // }}}

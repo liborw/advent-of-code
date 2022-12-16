@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, str::FromStr, collections::{HashSet, VecDeque}, fmt::Display};
+use std::{collections::HashMap, str::FromStr, collections::{HashSet, VecDeque}, fmt::Display, ops};
 use itertools::Itertools;
 use std::num::ParseIntError;
 use took::took;
@@ -43,11 +43,21 @@ fn main() {
     aoc_task!(day13a);
     aoc_task!(day13b);
     aoc_task!(day15a);
+    aoc_task!(day15b);
+    aoc_task!(day16a);
+    //aoc_task!(day16b);
+    aoc_task!(day17a);
+    aoc_task!(day17b);
+    aoc_task!(day18a);
+    aoc_task!(day18b);
+    aoc_task!(day19a);
+    aoc_task!(day19b);
 }
 
 // }}}
 // utils {{{
 
+#[derive(Debug)]
 struct NameMap
 {
     names: HashMap<String, usize>,
@@ -64,9 +74,12 @@ impl NameMap {
     }
 
     fn get(&mut self, name: String) -> usize {
-        let i = self.names.entry(name).or_insert(self.index).to_owned();
-        self.index += 1;
-        i
+        if !self.names.contains_key(&name) {
+            self.names.insert(name.clone(), self.index);
+            self.index += 1;
+        }
+
+        *self.names.get(&name).unwrap()
     }
 }
 
@@ -110,22 +123,57 @@ impl BoundingBox<i32> {
 type SparseMap<T> = HashMap<(i32, i32), T>;
 
 
-fn sparsemap_bb<T>(map: &SparseMap<T>) -> BoundingBox<i32> {
-    let mut bb = BoundingBox::zero();
-    for p in map.keys() {
-        bb.push(*p);
-    }
-    bb
+trait Map<T> {
+    fn bb(&self) -> BoundingBox<i32>;
+    fn print(&self, default: char) -> ();
+    fn print_fliptb(&self, default: char) -> ();
+    fn print_bb(&self, bb: &BoundingBox<i32>, default: char) -> ();
+    fn print_bb_fliptb(&self, bb: &BoundingBox<i32>, default: char) -> ();
 }
 
-fn sparsemap_print<T: Display>(map: &SparseMap<T>, default: T) -> () {
-    let bb = sparsemap_bb(map);
-
-    for y in bb.ymin-1..=bb.ymax+1 {
-        for x in bb.xmin-1..=bb.xmax+1 {
-            print!("{}", map.get(&(x,y)).unwrap_or(&default));
+impl<T: Display> Map<T> for SparseMap<T> {
+    fn bb(&self) -> BoundingBox<i32> {
+        let mut bb = BoundingBox::zero();
+        for p in self.keys() {
+            bb.push(*p);
         }
-        println!();
+        bb
+    }
+
+    fn print(&self, default: char) -> () {
+        let bb = self.bb();
+        self.print_bb(&bb, default);
+    }
+
+    fn print_fliptb(&self, default: char) -> () {
+
+        let bb = self.bb();
+        self.print_bb_fliptb(&bb, default);
+
+    }
+
+    fn print_bb(&self, bb: &BoundingBox<i32>, default: char) -> () {
+        for y in bb.ymin-1..=bb.ymax+1 {
+            for x in bb.xmin-1..=bb.xmax+1 {
+                match self.get(&(x,y)) {
+                    Some(v) => print!("{}", v),
+                    None => print!("{}", default)
+                }
+            }
+            println!();
+        }
+    }
+
+    fn print_bb_fliptb(&self, bb: &BoundingBox<i32>, default: char) -> () {
+        for y in 0..=bb.ymax - bb.ymin {
+            for x in bb.xmin-1..=bb.xmax+1 {
+                match self.get(&(x,bb.ymax - y)) {
+                    Some(v) => print!("{}", v),
+                    None => print!("{}", default)
+                }
+            }
+            println!();
+        }
     }
 }
 
@@ -1171,20 +1219,33 @@ impl CaveMap {
 // }}}
 // day15 {{{
 
+#[derive(Debug)]
 struct Sensor {
     x: i32,
     y: i32,
     r: i32
 }
 
-struct Beacon {
-    x: i32,
-    y: i32
+impl Sensor {
+
+    fn new(sx: i32, sy: i32, bx: i32, by: i32) -> Self {
+
+        Sensor{
+            x: sx,
+            y: sy,
+            r: (sx - bx).abs() + (sy - by).abs()
+        }
+    }
+
+    fn in_range(&self, x: i32, y: i32) -> bool {
+        (self.x - x).abs() + (self.y - y).abs() <= self.r
+    }
+
 }
 
-fn day15_input() -> Vec<(Sensor, Beacon)> {
+fn day15_input() -> Vec<Sensor> {
     let tokens = Regex::new(r"(-?\d+)").unwrap();
-    include_str!("../input/day15_test.txt")
+    include_str!("../input/day15.txt")
         .lines()
         .map(|l| {
 
@@ -1199,42 +1260,71 @@ fn day15_input() -> Vec<(Sensor, Beacon)> {
             let by = v[3];
             let r = (x - bx).abs() + (y - by).abs();
 
-            (Sensor{x, y, r}, Beacon{x:bx, y:by})
+            Sensor{x, y, r}
         }).collect()
 }
 
-fn day15a() -> u32 {
-    let sb = day15_input();
-    let y0 = 10;
-    let mut map: SparseMap<char> = SparseMap::new();
-
-    for (s, b) in sb {
-
-        let x0 = s.x - (s.r - (s.y - y0).abs());
-        let x1 = s.x + (s.r - (s.y - y0).abs());
-
-        for x in x0..x1 {
-            map.insert((x,y0), '#');
-        }
-
-        map.insert((b.x, b.y), 'B');
-        map.insert((s.x, s.y), 'S');
-    }
-
-
-    let mut cnt = 0;
-    let bb = sparsemap_bb(&map);
-    for x in bb.xmin..=bb.xmax {
-        if map.contains_key(&(x,y0)) {
-            cnt += 1;
-        }
-    }
-    cnt
+fn day15_ranges(sb: &Vec<Sensor>, y0: i32) -> Vec<(i32,i32)> {
+    sb.iter()
+        .map(|s| {
+            let x0 = s.x - (s.r - (s.y - y0).abs());
+            let x1 = s.x + (s.r - (s.y - y0).abs());
+            (x0, x1)
+        })
+        .filter(|(x0, x1)| x0 < x1)
+        .sorted_by_key(|(x0, _)| *x0)
+        .collect()
 }
+
+fn day15a() -> i32 {
+    let sensors = day15_input();
+    let y0 = 2_000_000;
+    let ranges = day15_ranges(&sensors, y0);
+
+    let mut ret = 0;
+    let mut range = ranges[0];
+    for i in 1..ranges.len() {
+        if ranges[i].0 <= range.1 {
+            if ranges[i].1 > range.1 {
+                range.1 = ranges[i].1;
+            }
+        } else {
+            ret += (range.0 - range.1).abs();
+            range = ranges[i];
+        }
+    }
+    ret += (range.0 - range.1).abs();
+    ret
+}
+
+fn day15b() -> i64 {
+
+    let sensors = day15_input();
+
+    for y0 in 0..4_000_000 {
+        let ranges = day15_ranges(&sensors, y0);
+
+        let mut range = ranges[0];
+        for i in 1..ranges.len() {
+            if ranges[i].0 <= range.1 {
+                if ranges[i].1 > range.1 {
+                    range.1 = ranges[i].1;
+                }
+            } else {
+
+                return (range.1 + 1) as i64 * 4_000_000 + y0 as i64;
+            }
+        }
+    }
+    0
+}
+
 
 
 // }}}
 // day16 {{{
+
+use ndarray::Array2;
 
 #[derive(Debug, Clone)]
 struct Valve {
@@ -1246,7 +1336,7 @@ struct Valve {
 fn day16_input() -> Vec<Valve> {
     let mut nmap: NameMap = ["AA"].into();
     let tokens = Regex::new(r"(\d+|[A-Z]{2})").unwrap();
-    include_str!("../input/day16_test.txt")
+    include_str!("../input/day16.txt")
         .lines()
         .map(|l| {
             let capture: Vec<_> = tokens.captures_iter(l).collect();
@@ -1266,12 +1356,623 @@ fn day16_input() -> Vec<Valve> {
         .collect()
 }
 
+fn day16_warshall(valves: &Vec<Valve>) -> Array2<i32> {
+    let n = valves.len();
+    let mut dist = Array2::ones((n, n)) * i32::MAX;
+
+    for v in valves {
+        dist[[v.id, v.id]] = 0;
+        for id in v.next.iter() {
+            dist[[v.id, *id]] = 1;
+        }
+    }
+
+    for k in 0..n {
+        for i in 0..n {
+            for j in 0..n {
+                if dist[(i,j)] as i64 > dist[(i,k)] as i64 + dist[(k,j)] as i64 {
+                    dist[(i,j)] = dist[(i,k)] + dist[(k,j)];
+                }
+            }
+        }
+    }
+    dist
+}
+
+fn day16a_DFS(start: usize, open:Vec<bool>, flow: i32, ttl: i32, valves: &Vec<Valve>, dist: &Array2<i32>) -> i32 {
+
+    if ttl < 0 {
+        return 0;
+    }
+
+    if ttl == 0 {
+        return flow;
+    }
+
+    let current_flow: i32 = open.iter().zip(valves.iter()).map(|(&o, v)| o as i32 * v.flow).sum();
+
+    let mut a_flow = flow + current_flow * ttl;
+    for v in valves {
+        if (v.flow > 0) & !open[v.id] {
+
+            let d_t = dist[[start, v.id]] + 1;
+            let d_flow = flow + d_t * current_flow;
+            let mut d_open = open.clone();
+            d_open[v.id] = true;
+
+            let f = day16a_DFS(v.id, d_open, d_flow, ttl - d_t, valves, dist);
+            if a_flow < f {
+                a_flow = f
+            }
+        }
+    }
+    a_flow
+}
 
 fn day16a() -> i32 {
-    let _valves = dbg!(day16_input());
+    let valves = day16_input();
+    let n = valves.len();
+    let dist = day16_warshall(&valves);
+
+    // DFS
+    day16a_DFS(0, vec![false; n],0, 30, &valves, &dist)
+}
+
+fn day16b() -> i32 {
+    let valves = day16_input();
+    let n = valves.len();
+    let dist = day16_warshall(&valves);
+
+    // DFS
+    day16a_DFS(0, vec![false; n],0, 24*2, &valves, &dist)
+}
 
 
-    0
+// }}}
+// day17 {{{
+
+#[derive(Debug)]
+struct Point<T> {
+    x: T,
+    y: T
+}
+
+impl<T> Point<T> {
+
+    fn new(x: T, y: T) -> Point<T> {
+        Point{x, y}
+    }
+}
+
+impl<T> From<(T,T)> for Point<T> {
+
+    fn from(p: (T,T)) -> Self {
+        Point::new(p.0, p.1)
+    }
+
+}
+
+#[derive(Debug, PartialEq)]
+enum Rock {
+    VLine,
+    Plus,
+    InvertedL,
+    Hline,
+    Square
+}
+
+impl Rock {
+
+    fn start(&self, top: &i32) -> Point<i32> {
+        use Rock::*;
+        match self {
+            VLine => Point::new(2, top + 4),
+            Plus => Point::new(2, top + 5),
+            InvertedL => Point::new(2, top + 4),
+            Hline => Point::new(2, top + 4),
+            Square => Point::new(2, top + 4)
+        }
+    }
+
+    fn points(&self, p: &Point<i32>) -> Vec<Point<i32>> {
+        use Rock::*;
+        match self {
+            VLine => vec![
+                Point::new(p.x, p.y),
+                Point::new(p.x + 1, p.y),
+                Point::new(p.x + 2, p.y),
+                Point::new(p.x + 3, p.y)
+            ],
+            Plus => vec![
+                Point::new(p.x, p.y),
+                Point::new(p.x + 1, p.y),
+                Point::new(p.x + 1, p.y + 1),
+                Point::new(p.x + 1, p.y - 1),
+                Point::new(p.x + 2, p.y),
+            ],
+            InvertedL => vec![
+                Point::new(p.x, p.y),
+                Point::new(p.x + 1, p.y),
+                Point::new(p.x + 2, p.y),
+                Point::new(p.x + 2, p.y + 1),
+                Point::new(p.x + 2, p.y + 2),
+            ],
+            Hline => vec![
+                Point::new(p.x, p.y),
+                Point::new(p.x, p.y + 1),
+                Point::new(p.x, p.y + 2),
+                Point::new(p.x, p.y + 3)
+            ],
+            Square => vec![
+                Point::new(p.x, p.y),
+                Point::new(p.x + 1, p.y),
+                Point::new(p.x, p.y + 1),
+                Point::new(p.x + 1, p.y + 1)
+            ],
+        }
+
+    }
+
+    fn test(&self, pos: &Point<i32>, map: &SparseMap<char>, width: &usize) -> bool {
+
+        if pos.x < 0 {
+            return false;
+        }
+
+        for p in self.points(pos) {
+            if map.contains_key(&(p.x, p.y)) {
+                return false;
+            }
+
+            if p.x >= *width as i32 {
+                return false;
+            }
+
+            if p.y <= 0 {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn place(&self, pos: &Point<i32>, map: &mut SparseMap<char>) -> i32 {
+        use Rock::*;
+        let mut y_max = 0;
+
+        let ch = match self {
+            VLine => 'V',
+            Plus => 'P',
+            InvertedL => 'I',
+            Hline => 'H',
+            Square => 'S'
+        };
+
+        for p in self.points(pos) {
+            map.insert((p.x, p.y), ch);
+            if y_max < p.y { y_max = p.y }
+        }
+        y_max
+    }
+}
+
+fn day17_input() -> Vec<i32> {
+    include_str!("../input/day17_test.txt")
+        .chars()
+        .filter_map(|ch| {
+            match ch {
+                '<' => Some(-1),
+                '>' => Some(1),
+                _   => None
+            }
+        }).collect()
+}
+
+
+fn day17_solve(rskip: usize, fskip: usize, take: usize) -> i32 {
+    use Rock::*;
+    let mut top = 0;
+    let width = 7;
+    let mut map = SparseMap::new();
+    let mut jets = day17_input().into_iter().cycle().skip(fskip);
+
+    for rock in vec![VLine, Plus, InvertedL, Hline, Square].iter().cycle().skip(rskip).take(take) {
+        let mut p = rock.start(&top);
+        loop {
+            let jet = jets.next().unwrap();
+
+            let mut new_p = Point::new(p.x + jet, p.y);
+            if rock.test(&new_p, &map, &width) {
+                p = new_p;
+            }
+
+            new_p = Point::new(p.x, p.y - 1);
+            if rock.test(&new_p, &map, &width) {
+                p = new_p;
+            } else {
+                let new_top = rock.place(&p, &mut map);
+                if top < new_top {top = new_top.clone()};
+                break;
+            }
+        }
+    }
+
+    top
+}
+
+fn day17_find_repeat(jets: Vec<i32>, take: usize) -> Option<(usize, usize, usize, usize, usize, usize)> {
+    use Rock::*;
+    let mut top = 0;
+    let width = 7;
+    let mut map = SparseMap::new();
+
+    let mut jets_cycle = jets.iter().cycle();
+
+    let mut patters: HashMap<(i32, i32, String), (i32, i32)> = HashMap::new();
+
+    let mut rock_i = 0;
+    let mut jet_i = 0;
+    for rock in vec![VLine, Plus, InvertedL, Hline, Square].iter().cycle().take(take) {
+        rock_i += 1;
+        let mut p = rock.start(&top);
+
+        let margin = 20;
+        let mut str_vec = Vec::new();
+        for y in top-margin..=top {
+            for x in 0..7 {
+                str_vec.push(*map.get(&(x,y)).unwrap_or(&'.'));
+            }
+        }
+
+        let pat = ((rock_i % 5) as i32, (jet_i % jets.len()) as i32, str_vec.iter().collect());
+        if patters.contains_key(&pat) {
+            let (l0, r0) = patters.get(&pat).unwrap();
+            let li = top - l0;
+            let ri = rock_i - 1 - r0;
+            let rs = rock_i % 5;
+            let fs = jet_i % jets.len();
+            return Some((*l0 as usize, *r0 as usize, li as usize, ri as usize, rs as usize, fs as usize))
+        } else {
+            patters.insert(pat, (top, rock_i-1));
+        }
+
+
+        loop {
+            let jet = jets_cycle.next().unwrap();
+            jet_i += 1;
+
+
+            let mut new_p = Point::new(p.x + jet, p.y);
+            if rock.test(&new_p, &map, &width) {
+                p = new_p;
+            }
+
+            new_p = Point::new(p.x, p.y - 1);
+            if rock.test(&new_p, &map, &width) {
+                p = new_p;
+            } else {
+                let new_top = rock.place(&p, &mut map);
+                if top < new_top {top = new_top.clone()};
+                break;
+            }
+        }
+    }
+
+    None
+}
+
+fn day17a() -> i32 {
+    day17_solve(0, 0, 50)
+}
+
+fn day17b() -> u64 {
+    let jets = day17_input();
+    let t: usize = 1_000_000_000_000;
+    //let t: usize = 2022;
+    let (l0, r0, li, ri, rs, fs) = day17_find_repeat(jets, 10000).unwrap();
+    let n = (t - r0) / ri;
+    l0 as u64 + (n as u64 * li as u64) as u64 + day17_solve(rs, fs, (t - r0) % ri) as u64
+}
+
+// }}}
+// day18: {{{
+
+fn day18_input() -> HashSet<(i32, i32, i32)> {
+
+    let input: Vec<Vec<i32>> = include_str!("../input/day18.txt")
+        .lines()
+        .map(|l| l.split(",").map(|v| v.parse().unwrap()).collect())
+        .collect();
+
+    let mut set = HashSet::new();
+    for line in input.iter() {
+        set.insert((line[0], line[1], line[2]));
+    }
+    set
+}
+
+fn day18a() -> usize {
+    let set = day18_input();
+
+    let mut cnt: usize = 0;
+    for &(x,y,z) in set.iter() {
+        if !set.contains(&(x+1,y,z)) {cnt += 1};
+        if !set.contains(&(x-1,y,z)) {cnt += 1};
+        if !set.contains(&(x,y+1,z)) {cnt += 1};
+        if !set.contains(&(x,y-1,z)) {cnt += 1};
+        if !set.contains(&(x,y,z+1)) {cnt += 1};
+        if !set.contains(&(x,y,z-1)) {cnt += 1};
+    }
+    cnt
+}
+
+
+
+fn day18b() -> usize {
+
+    let set = day18_input();
+    let mut min = (i32::MAX, i32::MAX, i32::MAX);
+    let mut max = (i32::MIN, i32::MIN, i32::MIN);
+
+    for &(x,y,z) in set.iter() {
+        if min.0 > x {min.0 = x};
+        if min.1 > y {min.1 = y};
+        if min.2 > z {min.2 = z};
+        if max.0 < x {max.0 = x};
+        if max.1 < y {max.1 = y};
+        if max.2 < z {max.2 = z};
+    }
+
+    let mut outside: HashSet<(i32,i32,i32)> = HashSet::new();
+    let mut queue: VecDeque<(i32,i32,i32)> = VecDeque::new();
+    let start = (min.0 - 1, min.1 - 1, min.2 - 1);
+
+    queue.push_front(start);
+    outside.insert(start);
+    while !queue.is_empty() {
+        let n = queue.pop_back().unwrap();
+
+        let new = (n.0+1, n.1, n.2);
+        if (max.0 + 1 >= new.0) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+
+        let new = (n.0-1, n.1, n.2);
+        if (min.0 - 1 <= new.0) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+
+        let new = (n.0, n.1+1, n.2);
+        if (max.1 + 1 >= new.1) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+
+        let new = (n.0, n.1-1, n.2);
+        if (min.1 - 1 <= new.1) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+
+        let new = (n.0, n.1, n.2+1);
+        if (max.2 + 1 >= new.2) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+
+        let new = (n.0, n.1, n.2-1);
+        if (min.2 - 1 <= new.2) & !outside.contains(&new) & !set.contains(&new) {
+            queue.push_front(new);
+            outside.insert(new);
+        };
+    }
+
+    let mut cnt: usize = 0;
+    for &(x,y,z) in set.iter() {
+        if outside.contains(&(x+1,y,z)) {cnt += 1};
+        if outside.contains(&(x-1,y,z)) {cnt += 1};
+        if outside.contains(&(x,y+1,z)) {cnt += 1};
+        if outside.contains(&(x,y-1,z)) {cnt += 1};
+        if outside.contains(&(x,y,z+1)) {cnt += 1};
+        if outside.contains(&(x,y,z-1)) {cnt += 1};
+    }
+
+    cnt
+}
+
+// }}}
+// day19 {{{
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+struct Resources {
+    ore: i32,
+    clay: i32,
+    obsidian: i32,
+    geode: i32,
+    ore_r: i32,
+    clay_r: i32,
+    obsidian_r: i32,
+    geode_r: i32
+}
+
+impl Resources {
+
+    fn new(ore: i32, clay: i32, obsidian: i32, geode: i32, ore_r: i32, clay_r: i32, obsidian_r: i32, geode_r: i32) -> Resources {
+        Resources{ore, clay, obsidian, geode, ore_r, clay_r, obsidian_r, geode_r}
+    }
+
+    fn zero() -> Resources {
+        Resources{ore: 0, clay: 0, obsidian: 0, geode: 0, ore_r: 0, clay_r: 0, obsidian_r: 0, geode_r: 0}
+    }
+
+    fn test(&self, action: &Self) -> bool {
+        ((self.ore + action.ore) >= 0) &
+        ((self.clay + action.clay) >= 0) &
+        ((self.obsidian + action.obsidian) >= 0) &
+        ((self.geode + action.geode) >= 0) &
+        ((self.ore_r + action.ore_r) >= 0) &
+        ((self.clay_r + action.clay_r) >= 0) &
+        ((self.obsidian_r + action.obsidian_r) >= 0) &
+        ((self.geode_r + action.geode_r) >= 0)
+    }
+
+    fn step(&self) -> Resources {
+        Resources {
+            ore: self.ore + self.ore_r,
+            clay: self.clay + self.clay_r,
+            obsidian: self.obsidian + self.obsidian_r,
+            geode: self.geode + self.geode_r,
+            ore_r: self.ore_r,
+            clay_r: self.clay_r,
+            obsidian_r: self.obsidian_r,
+            geode_r: self.geode_r
+        }
+    }
+
+    fn has_more_robots(&self, other: &Self) -> bool {
+        (self.ore_r <= other.ore_r) &
+        (self.clay_r <= other.clay_r)
+        //(self.obsidian_r <= other.obsidian_r)
+    }
+}
+
+impl ops::Add<Resources> for Resources {
+    type Output = Resources;
+
+    fn add(self, rhs: Resources) -> Self::Output {
+        Resources {
+            ore: self.ore + rhs.ore,
+            clay: self.clay + rhs.clay,
+            obsidian: self.obsidian + rhs.obsidian,
+            geode: self.geode + rhs.geode,
+            ore_r: self.ore_r + rhs.ore_r,
+            clay_r: self.clay_r + rhs.clay_r,
+            obsidian_r: self.obsidian_r + rhs.obsidian_r,
+            geode_r: self.geode_r + rhs.geode_r
+        }
+    }
+}
+
+impl PartialOrd for Resources {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.geode.partial_cmp(&other.geode)
+    }
+}
+
+impl Ord for Resources {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl Display for Resources {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{} {} {} {} {} {} {} {}]", self.ore, self.clay, self.obsidian, self.geode, self.ore_r, self.clay_r, self.obsidian_r, self.geode_r)
+    }
+}
+
+fn day19_input() -> Vec<Vec<Resources>> {
+    let num_rs = Regex::new(r"\d+").unwrap();
+    let mut blueprints = Vec::new();
+    for l in include_str!("../input/day19.txt").lines() {
+        let mut blueprint = Vec::new();
+
+        let m: Vec<_> = num_rs.captures_iter(l).collect();
+
+        let ore: i32 = m[1][0].parse().unwrap();
+        blueprint.push(Resources::new(-ore,0,0,0,1,0,0,0));
+
+        let ore: i32 = m[2][0].parse().unwrap();
+        blueprint.push(Resources::new(-ore,0,0,0,0,1,0,0));
+
+        let ore: i32 = m[3][0].parse().unwrap();
+        let clay: i32 = m[4][0].parse().unwrap();
+        blueprint.push(Resources::new(-ore,-clay,0,0,0,0,1,0));
+
+        let ore: i32 = m[5][0].parse().unwrap();
+        let obsidian: i32 = m[6][0].parse().unwrap();
+        blueprint.push(Resources::new(-ore,0,-obsidian,0,0,0,0,1));
+
+        blueprint.push(Resources::new(0,0,0,0,0,0,0,0));
+
+        blueprints.push(blueprint);
+    }
+    blueprints
+}
+
+fn day19_bfs(blueprint: &Vec<Resources>, start: &Resources, ttl: i32) -> i32 {
+
+    let mut queue = VecDeque::new();
+    let mut seen = HashSet::new();
+    let mut best_geode = 0;
+
+    queue.push_back((ttl, start.clone()));
+
+    let mut max = Resources::zero();
+    for a in blueprint {
+        if max.ore_r < -a.ore {
+            max.ore_r = -a.ore + 1
+        }
+
+        if max.clay_r < -a.clay {
+            max.clay_r = -a.clay + 1
+        }
+
+        if max.obsidian_r < -a.obsidian {
+            max.obsidian_r = -a.obsidian + 1
+        }
+    }
+
+
+    println!("max: {}", max);
+
+    while !queue.is_empty() {
+        let (ttl, res) = queue.pop_front().unwrap();
+        // println!("{} {}", ttl, res);
+
+        if res.geode > best_geode {
+            best_geode = res.geode;
+        }
+
+        if ttl > 0 {
+            let mut can_build_robot = false;
+            for (i, a) in blueprint.iter().enumerate() {
+                if res.test(a) & ((i < 4) | !can_build_robot) {
+
+                    let mut new_res = res.step();
+                    new_res = new_res + a.clone();
+
+                    if !new_res.has_more_robots(&max) {
+                        continue
+                    }
+
+                    if !seen.contains(&new_res) {
+                        seen.insert(new_res.clone());
+                        queue.push_back((ttl - 1, new_res));
+                        can_build_robot = false;
+                    }
+                }
+            }
+        }
+    }
+    best_geode
+}
+
+fn day19a() -> i32 {
+    let blueprints = day19_input();
+
+    let resources = Resources::new(0,0,0,0,1,0,0,0);
+    blueprints.iter().enumerate().map(|(i, b)| (i as i32 + 1) * day19_bfs(b, &resources, 24)).sum()
+}
+
+fn day19b() -> i32 {
+    let blueprints = day19_input();
+
+    let resources = Resources::new(0,0,0,0,1,0,0,0);
+    blueprints.iter().take(3).map(|b| day19_bfs(b, &resources, 32)).product()
 }
 
 

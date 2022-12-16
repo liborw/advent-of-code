@@ -564,7 +564,6 @@ print(f"day15a: {sum([1 for x in range(bb[0], bb[2]+1) if sparse_map.get((x,line
 #%% }}}
 #%% day16
 
-
 import re
 import numpy as np
 import itertools
@@ -617,57 +616,42 @@ for k in range(N):
                dist[i,j] = dist[i,k] + dist[k,j]
 
 
-def dfs(v: int, ttl: int, closed: list, flow: int) -> int:
+def dfs(v: int, ttl: int, state: list, flow: int) -> int:
 
     if ttl < 0:
-        return 0
+        return 0, [v], state.copy()
 
     if ttl == 0:
-        return flow
+        return flow, [v], state.copy()
 
     curr_flow = 0
     for valve in valves:
-        if not closed[valve.id]:
+        if state[valve.id] == 1:
             curr_flow += valve.flow
 
     max_flow = flow + curr_flow * ttl
+    hist = []
+    nstate = state.copy()
     for valve in valves:
-        if valve.flow > 0 and closed[valve.id]:
+        if valve.flow > 0 and state[valve.id] == 0:
             d = dist[v, valve.id] + 1
-            c = closed.copy()
-            c[valve.id] = False
+            ns = state.copy()
+            ns[valve.id] = 1
             nf = flow + d * curr_flow
-            f = dfs(valve.id, ttl - d, c, nf)
+            f, nhist, ns = dfs(valve.id, ttl - d, ns, nf)
             if max_flow < f:
                 max_flow = f
-    return max_flow
+                hist = nhist
+                nstate = ns.copy()
+
+    return max_flow, [v] + hist, nstate.copy()
 
 
-print(f"day16a: {dfs(0, 30, [True]*len(valves), 0)}")
+flow, path, state = dfs(0, 24*2, [0]*len(valves), 0)
 
-def dfs2(vs: tuple[int], ttl: int, closed: list, flow: int) -> int:
+print(f"day16a: {flow/2}")
+print(path, state)
 
-    if ttl < 0:
-        return 0
-
-    if ttl == 0:
-        return flow
-
-    curr_flow = 0
-    for valve in valves:
-        if not closed[valve.id]:
-            curr_flow += valve.flow
-
-    max_flow = flow + curr_flow * ttl
-    for v1, v2 in itertools.combinations([v for v in valves if v.flow > 0 and closed[v.id]],2):
-        d = dist[v, valve.id] + 1
-        c = closed.copy()
-        c[valve.id] = False
-        nf = flow + d * curr_flow
-        f = dfs(valve.id, ttl - d, c, nf)
-        if max_flow < f:
-            max_flow = f
-    return max_flow
 
 
 

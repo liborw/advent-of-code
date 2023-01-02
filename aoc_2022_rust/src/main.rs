@@ -44,14 +44,36 @@ fn main() {
     aoc_task!(day13b);
     aoc_task!(day15a);
     aoc_task!(day15b);
+    use day16::*;
     aoc_task!(day16a);
+    aoc_task!(day16b);
     //aoc_task!(day16b);
     aoc_task!(day17a);
     aoc_task!(day17b);
-    aoc_task!(day18a);
-    aoc_task!(day18b);
+    //aoc_task!(day18a);
+    //aoc_task!(day18b);
+
+    use day19::*;
     aoc_task!(day19a);
-    aoc_task!(day19b);
+    //aoc_task!(day19b);
+    //aoc_task!(day20a);
+    //aoc_task!(day20b);
+    aoc_task!(day21a);
+    aoc_task!(day21b);
+
+    use day22::*;
+    aoc_task!(day22a);
+
+    use day23::*;
+    aoc_task!(day23a);
+    aoc_task!(day23b);
+
+    use day24::*;
+    //aoc_task!(day24a);
+    //aoc_task!(day24b);
+
+    use day25::*;
+    //aoc_task!(day25a);
 }
 
 // }}}
@@ -1322,111 +1344,113 @@ fn day15b() -> i64 {
 
 
 // }}}
-// day16 {{{
+// day16 Valves {{{
 
-use ndarray::Array2;
+mod day16 {
 
-#[derive(Debug, Clone)]
-struct Valve {
-    id: usize,
-    next: Vec<usize>,
-    flow: i32
-}
+    use std::collections::{HashMap, VecDeque};
 
-fn day16_input() -> Vec<Valve> {
-    let mut nmap: NameMap = ["AA"].into();
-    let tokens = Regex::new(r"(\d+|[A-Z]{2})").unwrap();
-    include_str!("../input/day16.txt")
-        .lines()
-        .map(|l| {
-            let capture: Vec<_> = tokens.captures_iter(l).collect();
-            let mut next = vec![];
-            for i in 2..capture.len() {
-                next.push(nmap.get(capture[i][1].to_string()));
-            }
+    use ndarray::Array2;
+    use itertools::Itertools;
+    use regex::Regex;
+    use crate::NameMap;
 
-            Valve{
-                id: nmap.get(capture[0][1].to_string()),
-                flow: capture[1][1].parse().unwrap(),
-                next
-            }
-
-        })
-        .sorted_by_key(|v| v.id)
-        .collect()
-}
-
-fn day16_warshall(valves: &Vec<Valve>) -> Array2<i32> {
-    let n = valves.len();
-    let mut dist = Array2::ones((n, n)) * i32::MAX;
-
-    for v in valves {
-        dist[[v.id, v.id]] = 0;
-        for id in v.next.iter() {
-            dist[[v.id, *id]] = 1;
-        }
+    #[derive(Debug, Clone)]
+    struct Valve {
+        id: usize,
+        next: Vec<usize>,
+        flow: i32
     }
 
-    for k in 0..n {
-        for i in 0..n {
-            for j in 0..n {
-                if dist[(i,j)] as i64 > dist[(i,k)] as i64 + dist[(k,j)] as i64 {
-                    dist[(i,j)] = dist[(i,k)] + dist[(k,j)];
+    fn input() -> Vec<Valve> {
+        let mut nmap: NameMap = ["AA"].into();
+        let tokens = Regex::new(r"(\d+|[A-Z]{2})").unwrap();
+        include_str!("../input/day16.txt")
+            .lines()
+            .map(|l| {
+                let capture: Vec<_> = tokens.captures_iter(l).collect();
+                let mut next = vec![];
+                for i in 2..capture.len() {
+                    next.push(nmap.get(capture[i][1].to_string()));
+                }
+
+                Valve{
+                    id: nmap.get(capture[0][1].to_string()),
+                    flow: capture[1][1].parse().unwrap(),
+                    next
+                }
+
+            })
+            .sorted_by_key(|v| v.id)
+            .collect()
+    }
+
+    fn warshall(valves: &Vec<Valve>) -> Array2<i32> {
+        let n = valves.len();
+        let mut dist = Array2::ones((n, n)) * i32::MAX;
+
+        for v in valves {
+            dist[[v.id, v.id]] = 0;
+            for id in v.next.iter() {
+                dist[[v.id, *id]] = 1;
+            }
+        }
+
+        for k in 0..n {
+            for i in 0..n {
+                for j in 0..n {
+                    if dist[(i,j)] as i64 > dist[(i,k)] as i64 + dist[(k,j)] as i64 {
+                        dist[(i,j)] = dist[(i,k)] + dist[(k,j)];
+                    }
                 }
             }
         }
-    }
-    dist
-}
-
-fn day16a_DFS(start: usize, open:Vec<bool>, flow: i32, ttl: i32, valves: &Vec<Valve>, dist: &Array2<i32>) -> i32 {
-
-    if ttl < 0 {
-        return 0;
+        dist
     }
 
-    if ttl == 0 {
-        return flow;
-    }
+    fn solve(start: usize, state: u64, ttl: i32, flow: i32, valves: &Vec<Valve>, dist: &Array2<i32>) -> HashMap<u64, i32> {
+        let mut answer = HashMap::new();
+        let mut queue = VecDeque::new();
 
-    let current_flow: i32 = open.iter().zip(valves.iter()).map(|(&o, v)| o as i32 * v.flow).sum();
+        queue.push_back((start, state, ttl, flow));
 
-    let mut a_flow = flow + current_flow * ttl;
-    for v in valves {
-        if (v.flow > 0) & !open[v.id] {
+        while let Some((start, state, ttl, flow)) = queue.pop_front() {
+            answer.insert(state, *answer.get(&state).unwrap_or(&0).max(&flow));
 
-            let d_t = dist[[start, v.id]] + 1;
-            let d_flow = flow + d_t * current_flow;
-            let mut d_open = open.clone();
-            d_open[v.id] = true;
-
-            let f = day16a_DFS(v.id, d_open, d_flow, ttl - d_t, valves, dist);
-            if a_flow < f {
-                a_flow = f
+            for v in valves {
+                let ttl_new = ttl - dist[[start, v.id]] - 1;
+                if (v.flow <= 0) | (((1 << v.id as i64) & state) > 0) | (ttl_new <= 0) {continue;}
+                queue.push_back((v.id, state | (1 << v.id as i64), ttl_new, flow + ttl_new * v.flow));
             }
         }
+
+        answer
     }
-    a_flow
+
+    pub fn day16a() -> i32 {
+        let valves = input();
+        let dist = warshall(&valves);
+        solve(0, 0, 30, 0, &valves, &dist).into_values().max().unwrap()
+    }
+
+    pub fn day16b() -> i32 {
+
+        let valves = input();
+        let dist = warshall(&valves);
+        let answer = solve(0, 0, 26, 0, &valves, &dist);
+
+        let mut flow = 0;
+        for (s1, v1) in answer.iter() {
+            for (s2, v2) in answer.iter() {
+                if (s1 & s2 == 0) & (flow < (v1 + v2)) {
+                    flow = v1 + v2;
+                }
+            }
+        }
+        flow
+    }
+
 }
-
-fn day16a() -> i32 {
-    let valves = day16_input();
-    let n = valves.len();
-    let dist = day16_warshall(&valves);
-
-    // DFS
-    day16a_DFS(0, vec![false; n],0, 30, &valves, &dist)
-}
-
-fn day16b() -> i32 {
-    let valves = day16_input();
-    let n = valves.len();
-    let dist = day16_warshall(&valves);
-
-    // DFS
-    day16a_DFS(0, vec![false; n],0, 24*2, &valves, &dist)
-}
-
 
 // }}}
 // day17 {{{
@@ -1783,196 +1807,1068 @@ fn day18b() -> usize {
 }
 
 // }}}
-// day19 {{{
+// day19 Blueprints {{{
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
-struct Resources {
-    ore: i32,
-    clay: i32,
-    obsidian: i32,
-    geode: i32,
-    ore_r: i32,
-    clay_r: i32,
-    obsidian_r: i32,
-    geode_r: i32
-}
+mod day19 {
+    use std::collections::{VecDeque, HashSet};
+    use std::{fmt::Display, cmp::Ordering};
+    use std::ops;
 
-impl Resources {
+    use regex::Regex;
 
-    fn new(ore: i32, clay: i32, obsidian: i32, geode: i32, ore_r: i32, clay_r: i32, obsidian_r: i32, geode_r: i32) -> Resources {
-        Resources{ore, clay, obsidian, geode, ore_r, clay_r, obsidian_r, geode_r}
+
+    #[derive(Debug, PartialEq, Eq, Clone, Hash)]
+    struct Resources {
+        ore: i32,
+        clay: i32,
+        obsidian: i32,
+        geode: i32,
+        ore_r: i32,
+        clay_r: i32,
+        obsidian_r: i32,
+        geode_r: i32
     }
 
-    fn zero() -> Resources {
-        Resources{ore: 0, clay: 0, obsidian: 0, geode: 0, ore_r: 0, clay_r: 0, obsidian_r: 0, geode_r: 0}
-    }
+    impl Resources {
 
-    fn test(&self, action: &Self) -> bool {
-        ((self.ore + action.ore) >= 0) &
-        ((self.clay + action.clay) >= 0) &
-        ((self.obsidian + action.obsidian) >= 0) &
-        ((self.geode + action.geode) >= 0) &
-        ((self.ore_r + action.ore_r) >= 0) &
-        ((self.clay_r + action.clay_r) >= 0) &
-        ((self.obsidian_r + action.obsidian_r) >= 0) &
-        ((self.geode_r + action.geode_r) >= 0)
-    }
+        fn new(ore: i32, clay: i32, obsidian: i32, geode: i32, ore_r: i32, clay_r: i32, obsidian_r: i32, geode_r: i32) -> Resources {
+            Resources{ore, clay, obsidian, geode, ore_r, clay_r, obsidian_r, geode_r}
+        }
 
-    fn step(&self) -> Resources {
-        Resources {
-            ore: self.ore + self.ore_r,
-            clay: self.clay + self.clay_r,
-            obsidian: self.obsidian + self.obsidian_r,
-            geode: self.geode + self.geode_r,
-            ore_r: self.ore_r,
-            clay_r: self.clay_r,
-            obsidian_r: self.obsidian_r,
-            geode_r: self.geode_r
+        fn zero() -> Resources {
+            Resources{ore: 0, clay: 0, obsidian: 0, geode: 0, ore_r: 0, clay_r: 0, obsidian_r: 0, geode_r: 0}
+        }
+
+        fn test(&self, action: &Self) -> bool {
+            ((self.ore + action.ore) >= 0) &
+            ((self.clay + action.clay) >= 0) &
+            ((self.obsidian + action.obsidian) >= 0) &
+            ((self.geode + action.geode) >= 0) &
+            ((self.ore_r + action.ore_r) >= 0) &
+            ((self.clay_r + action.clay_r) >= 0) &
+            ((self.obsidian_r + action.obsidian_r) >= 0) &
+            ((self.geode_r + action.geode_r) >= 0)
+        }
+
+        fn step(&self) -> Resources {
+            Resources {
+                ore: self.ore + self.ore_r,
+                clay: self.clay + self.clay_r,
+                obsidian: self.obsidian + self.obsidian_r,
+                geode: self.geode + self.geode_r,
+                ore_r: self.ore_r,
+                clay_r: self.clay_r,
+                obsidian_r: self.obsidian_r,
+                geode_r: self.geode_r
+            }
+        }
+
+        fn has_more_robots(&self, other: &Self) -> bool {
+            (self.ore_r <= other.ore_r) &
+            (self.clay_r <= other.clay_r)
+            //(self.obsidian_r <= other.obsidian_r)
         }
     }
 
-    fn has_more_robots(&self, other: &Self) -> bool {
-        (self.ore_r <= other.ore_r) &
-        (self.clay_r <= other.clay_r)
-        //(self.obsidian_r <= other.obsidian_r)
-    }
-}
+    impl ops::Add<Resources> for Resources {
+        type Output = Resources;
 
-impl ops::Add<Resources> for Resources {
-    type Output = Resources;
-
-    fn add(self, rhs: Resources) -> Self::Output {
-        Resources {
-            ore: self.ore + rhs.ore,
-            clay: self.clay + rhs.clay,
-            obsidian: self.obsidian + rhs.obsidian,
-            geode: self.geode + rhs.geode,
-            ore_r: self.ore_r + rhs.ore_r,
-            clay_r: self.clay_r + rhs.clay_r,
-            obsidian_r: self.obsidian_r + rhs.obsidian_r,
-            geode_r: self.geode_r + rhs.geode_r
-        }
-    }
-}
-
-impl PartialOrd for Resources {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.geode.partial_cmp(&other.geode)
-    }
-}
-
-impl Ord for Resources {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
-    }
-}
-
-impl Display for Resources {
-
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{} {} {} {} {} {} {} {}]", self.ore, self.clay, self.obsidian, self.geode, self.ore_r, self.clay_r, self.obsidian_r, self.geode_r)
-    }
-}
-
-fn day19_input() -> Vec<Vec<Resources>> {
-    let num_rs = Regex::new(r"\d+").unwrap();
-    let mut blueprints = Vec::new();
-    for l in include_str!("../input/day19.txt").lines() {
-        let mut blueprint = Vec::new();
-
-        let m: Vec<_> = num_rs.captures_iter(l).collect();
-
-        let ore: i32 = m[1][0].parse().unwrap();
-        blueprint.push(Resources::new(-ore,0,0,0,1,0,0,0));
-
-        let ore: i32 = m[2][0].parse().unwrap();
-        blueprint.push(Resources::new(-ore,0,0,0,0,1,0,0));
-
-        let ore: i32 = m[3][0].parse().unwrap();
-        let clay: i32 = m[4][0].parse().unwrap();
-        blueprint.push(Resources::new(-ore,-clay,0,0,0,0,1,0));
-
-        let ore: i32 = m[5][0].parse().unwrap();
-        let obsidian: i32 = m[6][0].parse().unwrap();
-        blueprint.push(Resources::new(-ore,0,-obsidian,0,0,0,0,1));
-
-        blueprint.push(Resources::new(0,0,0,0,0,0,0,0));
-
-        blueprints.push(blueprint);
-    }
-    blueprints
-}
-
-fn day19_bfs(blueprint: &Vec<Resources>, start: &Resources, ttl: i32) -> i32 {
-
-    let mut queue = VecDeque::new();
-    let mut seen = HashSet::new();
-    let mut best_geode = 0;
-
-    queue.push_back((ttl, start.clone()));
-
-    let mut max = Resources::zero();
-    for a in blueprint {
-        if max.ore_r < -a.ore {
-            max.ore_r = -a.ore + 1
-        }
-
-        if max.clay_r < -a.clay {
-            max.clay_r = -a.clay + 1
-        }
-
-        if max.obsidian_r < -a.obsidian {
-            max.obsidian_r = -a.obsidian + 1
+        fn add(self, rhs: Resources) -> Self::Output {
+            Resources {
+                ore: self.ore + rhs.ore,
+                clay: self.clay + rhs.clay,
+                obsidian: self.obsidian + rhs.obsidian,
+                geode: self.geode + rhs.geode,
+                ore_r: self.ore_r + rhs.ore_r,
+                clay_r: self.clay_r + rhs.clay_r,
+                obsidian_r: self.obsidian_r + rhs.obsidian_r,
+                geode_r: self.geode_r + rhs.geode_r
+            }
         }
     }
 
-
-    println!("max: {}", max);
-
-    while !queue.is_empty() {
-        let (ttl, res) = queue.pop_front().unwrap();
-        // println!("{} {}", ttl, res);
-
-        if res.geode > best_geode {
-            best_geode = res.geode;
+    impl PartialOrd for Resources {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            self.geode.partial_cmp(&other.geode)
         }
+    }
 
-        if ttl > 0 {
-            let mut can_build_robot = false;
+    impl Ord for Resources {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.partial_cmp(other).unwrap()
+        }
+    }
+
+    impl Display for Resources {
+
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "[{} {} {} {} {} {} {} {}]", self.ore, self.clay, self.obsidian, self.geode, self.ore_r, self.clay_r, self.obsidian_r, self.geode_r)
+        }
+    }
+
+    type Blueprint = Vec<Resources>;
+
+    fn input() -> Vec<Blueprint> {
+        let num_rs = Regex::new(r"\d+").unwrap();
+        let mut blueprints = Vec::new();
+        for l in include_str!("../input/day19.txt").lines() {
+            let mut blueprint = Vec::new();
+
+            let m: Vec<_> = num_rs.captures_iter(l).collect();
+
+            let ore: i32 = m[1][0].parse().unwrap();
+            blueprint.push(Resources::new(-ore,0,0,0,1,0,0,0));
+
+            let ore: i32 = m[2][0].parse().unwrap();
+            blueprint.push(Resources::new(-ore,0,0,0,0,1,0,0));
+
+            let ore: i32 = m[3][0].parse().unwrap();
+            let clay: i32 = m[4][0].parse().unwrap();
+            blueprint.push(Resources::new(-ore,-clay,0,0,0,0,1,0));
+
+            let ore: i32 = m[5][0].parse().unwrap();
+            let obsidian: i32 = m[6][0].parse().unwrap();
+            blueprint.push(Resources::new(-ore,0,-obsidian,0,0,0,0,1));
+
+            blueprint.push(Resources::new(0,0,0,0,0,0,0,0));
+
+            blueprints.push(blueprint);
+        }
+        blueprints
+    }
+
+    fn bfs_geode_robot(blueprint: &Blueprint, start: &Resources) -> Option<i32> {
+
+        let mut queue = VecDeque::new();
+        let mut seen = HashSet::new();
+        let mut best_geode = 0;
+
+        queue.push_back((0, start.clone()));
+
+        while let Some((time, res)) = queue.pop_front() {
+
+            if res.geode > 0 {
+                return Some(time);
+            }
+
             for (i, a) in blueprint.iter().enumerate() {
-                if res.test(a) & ((i < 4) | !can_build_robot) {
+                if res.test(a) {
 
                     let mut new_res = res.step();
                     new_res = new_res + a.clone();
 
-                    if !new_res.has_more_robots(&max) {
-                        continue
-                    }
-
                     if !seen.contains(&new_res) {
                         seen.insert(new_res.clone());
-                        queue.push_back((ttl - 1, new_res));
-                        can_build_robot = false;
+                        queue.push_back((time + 1, new_res));
                     }
                 }
             }
         }
+        None
     }
-    best_geode
+
+    fn max_geodes_in(blueprint: &Blueprint, start: &Resources, ttl: i32) -> i32 {
+        let t_for_geode_robot = bfs_geode_robot(blueprint, start).unwrap();
+        println!("{}", t_for_geode_robot);
+        let mut ttl = ttl;
+        let mut geodes = 0;
+
+        if ttl < t_for_geode_robot {
+            return 0;
+        }
+
+        ttl -= t_for_geode_robot;
+        while ttl - t_for_geode_robot > 0 {
+            geodes += ttl;
+            ttl -= t_for_geode_robot;
+        }
+
+        geodes + ttl
+    }
+
+
+    pub fn day19a() -> i32 {
+        let blueprints = input();
+
+        let start = Resources::new(0,0,0,0,1,0,0,0);
+        blueprints.iter().enumerate().map(|(i, b)| (i as i32 + 1) * max_geodes_in(b, &start, 24)).sum()
+    }
+
+    pub fn day19b() -> i32 {
+        let blueprints = input();
+
+        let resources = Resources::new(0,0,0,0,1,0,0,0);
+        //blueprints.iter().take(3).map(|b| bfs(b, &resources, 32)).product()
+        0
+    }
+
 }
 
-fn day19a() -> i32 {
-    let blueprints = day19_input();
+// }}}
+// day20 {{{
 
-    let resources = Resources::new(0,0,0,0,1,0,0,0);
-    blueprints.iter().enumerate().map(|(i, b)| (i as i32 + 1) * day19_bfs(b, &resources, 24)).sum()
+
+fn day20_input() -> Vec<i64> {
+    include_str!("../input/day20.txt")
+        .lines()
+        .map(|l| l.parse::<i64>().unwrap())
+        .collect()
 }
 
-fn day19b() -> i32 {
-    let blueprints = day19_input();
+fn day20_new_i(i: usize, v: i64, imax: usize) -> usize {
 
-    let resources = Resources::new(0,0,0,0,1,0,0,0);
-    blueprints.iter().take(3).map(|b| day19_bfs(b, &resources, 32)).product()
+    let c = i as i64 + v;
+
+    if c < 0 {
+        (imax as i64 + (c % imax as i64)) as usize
+    } else {
+        (c % imax as i64) as usize
+    }
+}
+
+fn day20_mix(mut code: Vec<(usize, i64)>) -> Vec<(usize, i64)> {
+    let code_len = code.len();
+
+    //println!("{:?}", code.iter().sorted_by_key(|(i, _)| *i).map(|(_, v)| v).collect::<Vec<_>>());
+
+    for i in 0..code_len {
+        let (j, v) = code[i];
+
+        let from = j;
+
+        let to = day20_new_i(j, v, code_len - 1);
+        //println!("{} from {} to {}", v, from, to);
+
+        for k in 0..code_len {
+            let (j_, v_) = code[k];
+
+            if (from < to) & (j_  > from) & (j_ <= to)  {
+                code[k] = (j_ - 1, v_);
+            } else if (from > to ) & (j_ >= to) & (j_ < from) {
+                code[k] = (j_ + 1, v_);
+            }
+        }
+        code[i].0 = to;
+
+        //println!("{:?}", code.iter().sorted_by_key(|(i, _)| *i).map(|(_, v)| v).collect::<Vec<_>>());
+
+    }
+    code
+}
+
+fn day20a() -> i64 {
+    let mut code: Vec<(usize, i64)> = day20_input().into_iter().enumerate().collect();
+    let code_len = code.len();
+    code = day20_mix(code);
+    code.sort_by_key(|(i, _)| i.clone());
+    let zero_i = code.iter().find(|(_, v)| *v == 0).unwrap().0;
+    [1000, 2000, 3000].into_iter().map(|v| code[(v + zero_i) % code_len].1).sum()
+}
+
+
+fn day20b() -> i64 {
+    let mut code: Vec<(usize, i64)> = day20_input().into_iter().enumerate().collect();
+    let code_len = code.len();
+
+    for i in 0..code_len {
+        code[i].1 = code[i].1 * 811589153;
+    }
+
+    //println!("{:?}", code.iter().sorted_by_key(|(i, _)| *i).map(|(_, v)| v).collect::<Vec<_>>());
+
+    for _ in 0..10 {
+        code = day20_mix(code);
+    }
+    code.sort_by_key(|(i, _)| i.clone());
+    //println!("{:?}", code.iter().sorted_by_key(|(i, _)| *i).map(|(_, v)| v).collect::<Vec<_>>());
+    let zero_i = code.iter().find(|(_, v)| *v == 0).unwrap().0;
+    [1000, 2000, 3000].into_iter().map(|v| code[(v + zero_i) % code_len].1).sum()
+}
+
+// }}}
+// day21 {{{
+
+#[derive(Debug)]
+enum MonkeyJob {
+    Val(i64),
+    Add(String, String),
+    Sub(String, String),
+    Div(String, String),
+    Mul(String, String),
+}
+
+type MonkeyMap = HashMap<String, MonkeyJob>;
+
+fn day21_input() -> MonkeyMap {
+    use MonkeyJob::*;
+    let mut monkeys = HashMap::new();
+
+    include_str!("../input/day21.txt")
+        .lines()
+        .for_each(|l| {
+            match l.split_whitespace().collect::<Vec<_>>()[..] {
+                [m0, v] => monkeys.insert(m0[..m0.len()-1].to_string(), Val(v.parse().unwrap())),
+                [m0, m1, "+", m2] => monkeys.insert(m0[..m0.len()-1].to_string(), Add(m1.to_string(), m2.to_string())),
+                [m0, m1, "-", m2] => monkeys.insert(m0[..m0.len()-1].to_string(), Sub(m1.to_string(), m2.to_string())),
+                [m0, m1, "/", m2] => monkeys.insert(m0[..m0.len()-1].to_string(), Div(m1.to_string(), m2.to_string())),
+                [m0, m1, "*", m2] => monkeys.insert(m0[..m0.len()-1].to_string(), Mul(m1.to_string(), m2.to_string())),
+                _ => unreachable!()
+            };
+        });
+
+    monkeys
+}
+
+fn day21_get_value(name: &String, monkeys: &MonkeyMap) -> i64 {
+    use MonkeyJob::*;
+
+    match &monkeys[name] {
+        Val(n) => *n,
+        Add(m1, m2) => day21_get_value(&m1, monkeys) + day21_get_value(&m2, monkeys),
+        Sub(m1, m2) => day21_get_value(&m1, monkeys) - day21_get_value(&m2, monkeys),
+        Div(m1, m2) => day21_get_value(&m1, monkeys) / day21_get_value(&m2, monkeys),
+        Mul(m1, m2) => day21_get_value(&m1, monkeys) * day21_get_value(&m2, monkeys),
+    }
+
+}
+
+fn day21_has_human(name: &String, monkeys: &MonkeyMap) -> bool {
+    use MonkeyJob::*;
+
+    if *name == "humn".to_string() {
+        return true;
+    };
+
+    match &monkeys[name] {
+        Val(_) => false,
+        Add(m1, m2) | Sub(m1, m2) | Div(m1, m2) | Mul(m1, m2)  => day21_has_human(m1, monkeys) | day21_has_human(m2, monkeys)
+    }
+}
+
+fn day21a_solve(name: &String, value: i64, monkeys: &MonkeyMap) -> i64 {
+    use MonkeyJob::*;
+
+    if *name == "humn".to_string() {
+        return value;
+    };
+
+    match &monkeys[name] {
+        Val(n) => *n,
+        Add(m1, m2) => {
+            if day21_has_human(m1, monkeys) {
+                day21a_solve(&m1, value - day21_get_value(&m2, monkeys), monkeys)
+            } else {
+                day21a_solve(&m2, value - day21_get_value(&m1, monkeys), monkeys)
+            }
+        }
+        Sub(m1, m2) => {
+            if day21_has_human(m1, monkeys) {
+                day21a_solve(&m1, value + day21_get_value(&m2, monkeys), monkeys)
+            } else {
+                day21a_solve(&m2, day21_get_value(&m1, monkeys) - value, monkeys)
+            }
+        }
+        Div(m1, m2) => {
+            if day21_has_human(m1, monkeys) {
+                day21a_solve(&m1, value * day21_get_value(&m2, monkeys), monkeys)
+            } else {
+                day21a_solve(&m2, day21_get_value(&m1, monkeys) / value, monkeys)
+            }
+        }
+        Mul(m1, m2) => {
+            if day21_has_human(m1, monkeys) {
+                day21a_solve(&m1, value / day21_get_value(&m2, monkeys), monkeys)
+            } else {
+                day21a_solve(&m2, value / day21_get_value(&m1, monkeys), monkeys)
+            }
+        }
+    }
+}
+
+fn day21a() -> i64 {
+    let monkeys = day21_input();
+    day21_get_value(&"root".to_string(), &monkeys)
+}
+
+fn day21b() -> i64 {
+    use MonkeyJob::*;
+    let monkeys = day21_input();
+
+    match &monkeys[&"root".to_string()] {
+        Add(m1, m2) | Sub(m1, m2) | Div(m1, m2) | Mul(m1, m2)  => {
+            if day21_has_human(&m1, &monkeys) {
+                day21a_solve(&m1, day21_get_value(&m2, &monkeys), &monkeys)
+            } else {
+                day21a_solve(&m2, day21_get_value(&m1, &monkeys), &monkeys)
+
+            }
+        }
+        _ => unreachable!()
+    }
+}
+
+
+
+// }}}
+// day22 {{{
+
+mod day22 {
+
+    use regex::Regex;
+    use crate::{SparseMap, Map};
+
+    #[derive(Debug)]
+    enum Move {
+        Move(i32),
+        Left,
+        Right
+    }
+
+    fn input() -> (SparseMap<char>, Vec<Move>) {
+
+        let (map_str, code_str) = include_str!("../input/day22.txt").split_once("\n\n").unwrap();
+
+        let mut map = SparseMap::new();
+        for (y, l) in map_str.lines().enumerate() {
+            for (x, ch) in l.chars().enumerate() {
+                if ch != ' ' {
+                    map.insert((x as i32,y as i32), ch);
+                }
+            }
+        }
+
+        let mut path = Vec::new();
+        let move_re = Regex::new(r"\d+|[RL]").unwrap();
+        for cap in move_re.captures_iter(code_str) {
+
+            let m = match &cap[0] {
+                "L" => Move::Left,
+                "R" => Move::Right,
+                 v  => Move::Move(v.parse::<i32>().unwrap())
+            };
+            path.push(m);
+        }
+        (map, path)
+    }
+
+
+    fn start(map: &SparseMap<char>) -> (i32, i32) {
+
+        let mut x = 0;
+        while map.get(&(x, 0)).unwrap_or(&' ') != &'.' {
+            x += 1;
+        };
+
+        (x, 0)
+    }
+
+    fn find_oposite_end(map: &SparseMap<char>, mut x: i32, mut y: i32, dx: i32, dy: i32) -> (i32, i32) {
+        while map.get(&(x + dx, y + dy)) != None {
+            x = x + dx;
+            y = y + dy;
+        }
+        (x, y)
+    }
+
+    pub fn day22a() -> i32 {
+        let (mut map, path) = input();
+        let (mut x, mut y) = start(&map);
+
+        let (mut dx, mut dy) = (1, 0);
+
+        for m in path {
+            match m {
+                Move::Move(n) => {
+                    for _ in 0..n {
+                        match (dx, dy) {
+                            ( 1,  0) => map.insert((x, y), '>'),
+                            ( 0, -1) => map.insert((x, y), '^'),
+                            (-1,  0) => map.insert((x, y), '<'),
+                            ( 0,  1) => map.insert((x, y), 'v'),
+                            _ => unreachable!()
+                        };
+                        match map.get(&(x + dx, y + dy)) {
+                            Some('.')|Some('>')|Some('<')|Some('v')|Some('^') => {
+                                x = x + dx;
+                                y = y + dy;
+                            },
+                            Some('#') => {
+                                break;
+                            },
+                            None => {
+                                let test_pos = find_oposite_end(&map, x, y, -dx, -dy);
+                                if map.get(&test_pos) != Some(&'#') {
+                                    (x, y) = test_pos;
+                                }
+                            },
+                            _ => unreachable!()
+                        }
+                    }
+                },
+                Move::Left => {
+                    (dx, dy) = match (dx, dy) {
+                        ( 1,  0) => ( 0, -1),
+                        ( 0,  1) => ( 1,  0),
+                        (-1,  0) => ( 0,  1),
+                        ( 0, -1) => (-1,  0),
+                        _ => unreachable!()
+                    }
+                },
+                Move::Right => {
+                    (dx, dy) = match (dx, dy) {
+                        ( 1,  0) => ( 0,  1),
+                        ( 0,  1) => (-1,  0),
+                        (-1,  0) => ( 0, -1),
+                        ( 0, -1) => ( 1,  0),
+                        _ => unreachable!()
+                    }
+                },
+            }
+        }
+
+        let facing = match (dx, dy) {
+            ( 1,  0) => 0,
+            ( 0, -1) => 1,
+            (-1,  0) => 2,
+            ( 0,  1) => 3,
+            _ => unreachable!()
+        };
+
+        println!("1000 * {} + 4*{} + {}", y + 1, x + 1, facing);
+        1000*(y + 1) +  4* (x + 1) + facing
+    }
+}
+
+// }}}
+// day23 {{{
+
+mod day23 {
+
+    use crate::{SparseMap, Map};
+    use std::collections::VecDeque;
+
+    #[derive(Debug, Clone, Copy)]
+    struct Point {
+        x: i32,
+        y: i32
+
+    }
+
+    #[derive(Debug)]
+    enum Direction {
+        N, S, W, E, NE, NW, SE, SW
+    }
+
+    impl Point {
+
+        fn new(x: i32, y: i32) -> Point {
+            Point{x, y}
+        }
+
+        fn check<T>(&self, dir: &Direction, map: &SparseMap<T>) -> bool {
+            use Direction::*;
+            match dir {
+                N  => {
+                    !map.contains_key(&self.go(&N).as_tuple()) &
+                    !map.contains_key(&self.go(&NW).as_tuple()) &
+                    !map.contains_key(&self.go(&NE).as_tuple())
+                },
+                S  => {
+                    !map.contains_key(&self.go(&S).as_tuple()) &
+                    !map.contains_key(&self.go(&SW).as_tuple()) &
+                    !map.contains_key(&self.go(&SE).as_tuple())
+                },
+                W  => {
+                    !map.contains_key(&self.go(&W).as_tuple()) &
+                    !map.contains_key(&self.go(&NW).as_tuple()) &
+                    !map.contains_key(&self.go(&SW).as_tuple())
+                },
+                E  => {
+                    !map.contains_key(&self.go(&E).as_tuple()) &
+                    !map.contains_key(&self.go(&NE).as_tuple()) &
+                    !map.contains_key(&self.go(&SE).as_tuple())
+                },
+                _  => unreachable!("Only N,S,W,E are posible directions to check"),
+            }
+        }
+
+        fn check_all<T>(&self, map: &SparseMap<T>) -> bool {
+            use Direction::*;
+            !map.contains_key(&self.go(&N).as_tuple()) &
+            !map.contains_key(&self.go(&NE).as_tuple()) &
+            !map.contains_key(&self.go(&E).as_tuple()) &
+            !map.contains_key(&self.go(&SE).as_tuple()) &
+            !map.contains_key(&self.go(&S).as_tuple()) &
+            !map.contains_key(&self.go(&SW).as_tuple()) &
+            !map.contains_key(&self.go(&W).as_tuple()) &
+            !map.contains_key(&self.go(&NW).as_tuple())
+        }
+
+        fn go(&self, dir: &Direction) -> Point {
+            use Direction::*;
+            match dir {
+                S  => {Point::new(self.x, self.y + 1)},
+                N  => {Point::new(self.x, self.y - 1)},
+                W  => {Point::new(self.x - 1, self.y)},
+                E  => {Point::new(self.x + 1, self.y)},
+                SE => {Point::new(self.x + 1, self.y + 1)},
+                SW => {Point::new(self.x - 1, self.y + 1)},
+                NE => {Point::new(self.x + 1, self.y - 1)},
+                NW => {Point::new(self.x - 1, self.y - 1)},
+            }
+        }
+
+        fn as_tuple(&self) -> (i32, i32) {
+            (self.x, self.y)
+        }
+
+        fn neighbours_8(self) -> impl Iterator<Item = Point> {
+            let (x, y) = self.as_tuple();
+            [
+                Point::new(x + 1, y    ),
+                Point::new(x + 1, y + 1),
+                Point::new(x    , y + 1),
+                Point::new(x - 1, y + 1),
+                Point::new(x - 1, y    ),
+                Point::new(x - 1, y - 1),
+                Point::new(x    , y - 1),
+            ].into_iter()
+        }
+
+        fn neighbours_4(self) -> impl Iterator<Item = Point> {
+            let (x, y) = self.as_tuple();
+            [
+                Point::new(x + 1, y    ),
+                Point::new(x    , y + 1),
+                Point::new(x - 1, y    ),
+                Point::new(x    , y - 1),
+            ].into_iter()
+        }
+
+    }
+
+    #[derive(Debug, Clone)]
+    struct Elf {
+        id: usize,
+        position: Point,
+        next: Option<Point>
+    }
+
+    impl Elf {
+
+        fn new(id: usize, position: Point) -> Elf {
+            Elf {
+                id,
+                position,
+                next: None
+            }
+        }
+
+    }
+
+    fn input() -> Vec<Elf> {
+        let mut map = Vec::new();
+        let mut i:usize = 0;
+        include_str!("../input/day23.txt")
+            .lines()
+            .enumerate()
+            .for_each(|(y, l)| l.chars().enumerate().for_each(|(x, ch)| {
+                    match ch {
+                        '.' => {},
+                        '#' => {
+                            map.push(Elf::new(i, Point::new(x as i32, y as i32)));
+                            i += 1;
+                        }
+                        _ => unreachable!(),
+                    }
+                })
+            );
+        map
+    }
+
+    pub fn day23a() -> usize {
+        use Direction::*;
+        let mut directions:VecDeque<Direction> = VecDeque::from(vec![N, S, W, E]);
+        let mut elfs = input();
+        let mut map: SparseMap<char> = SparseMap::new();
+        let mut map_proposed: SparseMap<i32> = SparseMap::new();
+        for _ in 0..10 {
+
+            map.clear();
+            for elf in elfs.iter() {
+                map.insert(elf.position.as_tuple(), '#');
+            }
+
+            map_proposed.clear();
+            for elf in elfs.iter_mut() {
+                elf.next = None;
+                if !elf.position.check_all(&map) {
+                    for dir in directions.iter() {
+                        if elf.position.check(dir, &map) {
+                            elf.next = Some(elf.position.go(dir));
+                            *map_proposed.entry(elf.next.unwrap().as_tuple()).or_insert(0) += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            for elf in elfs.iter_mut() {
+                if let Some(p) = &elf.next {
+                    if map_proposed.get(&p.as_tuple()).unwrap_or(&0) == &1 {
+                        elf.position = p.clone();
+                    }
+                }
+                elf.next = None;
+            }
+            directions.rotate_left(1);
+        }
+
+        map.clear();
+        for elf in elfs.iter() {
+            map.insert(elf.position.as_tuple(), '#');
+        }
+
+        let bb = map.bb();
+        ((bb.xmax - bb.xmin + 1) * (bb.ymax - bb.ymin + 1) - map.len() as i32) as usize
+    }
+
+    pub fn day23b() -> usize {
+        use Direction::*;
+        let mut directions:VecDeque<Direction> = VecDeque::from(vec![N, S, W, E]);
+        let mut elfs = input();
+        let mut map: SparseMap<char> = SparseMap::new();
+        let mut map_proposed: SparseMap<i32> = SparseMap::new();
+        let mut i = 0;
+        loop {
+            i += 1;
+            map.clear();
+            for elf in elfs.iter() {
+                map.insert(elf.position.as_tuple(), '#');
+            }
+
+            map_proposed.clear();
+            for elf in elfs.iter_mut() {
+                elf.next = None;
+                if !elf.position.check_all(&map) {
+                    for dir in directions.iter() {
+                        if elf.position.check(dir, &map) {
+                            elf.next = Some(elf.position.go(dir));
+                            *map_proposed.entry(elf.next.unwrap().as_tuple()).or_insert(0) += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            let mut no_move = true;
+            for elf in elfs.iter_mut() {
+                if let Some(p) = &elf.next {
+                    if map_proposed.get(&p.as_tuple()).unwrap_or(&0) == &1 {
+                        elf.position = p.clone();
+                        no_move = false;
+                    }
+                }
+                elf.next = None;
+            }
+
+            if no_move {
+                map.clear();
+                for elf in elfs.iter() {
+                    map.insert(elf.position.as_tuple(), '#');
+                }
+
+                map.print('.');
+                return i;
+            }
+
+
+
+            directions.rotate_left(1);
+        }
+    }
+}
+
+
+// }}}
+// day24 Blizzards {{{
+
+mod day24 {
+    use std::{collections::{VecDeque, HashMap, BinaryHeap, HashSet}, cmp::Ordering};
+    use crate::SparseMap;
+
+
+    #[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
+    struct Position<T> {
+        x: T,
+        y: T
+    }
+
+    impl<T: Clone> Position<T> {
+        fn new(x: T, y: T) -> Position<T> {
+            Position{x, y}
+        }
+
+        fn as_tuple(&self) -> (T, T) {
+            (self.x.clone(), self.y.clone())
+        }
+    }
+
+    impl Position<i32> {
+
+        fn neighbours(&self) -> impl Iterator<Item = Position<i32>> {
+            [
+                Position::new(self.x, self.y),
+                Position::new(self.x + 1, self.y),
+                Position::new(self.x - 1, self.y),
+                Position::new(self.x, self.y + 1),
+                Position::new(self.x, self.y - 1),
+            ].into_iter()
+        }
+
+        fn manhatan(&self, other: &Self) -> u32 {
+            ((self.x - other.x).abs() + (self.y - other.y).abs()) as u32
+        }
+    }
+
+
+    #[derive(Debug, Clone)]
+    struct Blizzard {
+        start: Position<i32>,
+        direction: char,
+    }
+
+    impl Blizzard {
+        fn new(x: i32, y: i32, direction: char) -> Blizzard {
+            Blizzard { start: Position { x, y}, direction }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct State {
+        blizzards: Vec<Blizzard>,
+        width: u32,
+        height: u32
+    }
+
+    fn circ(i: i32, imax: u32) -> i32 {
+        let imax = imax as i32;
+        ((i % imax) + imax ) % imax
+    }
+
+    impl State {
+
+        fn get_map(&self, t: u32) -> SparseMap<char> {
+            let mut map = SparseMap::new();
+            for b in self.blizzards.iter() {
+                let bpos = match b.direction {
+                    '<' => (circ(b.start.x - t as i32, self.width), b.start.y),
+                    '>' => (circ(b.start.x + t as i32, self.width), b.start.y),
+                    '^' => (b.start.x, circ(b.start.y - t as i32, self.height)),
+                    'v' => (b.start.x, circ(b.start.y + t as i32, self.height)),
+                    other => unreachable!("Direction must be one of <>V^ but is {}", other),
+                };
+
+                if map.contains_key(&bpos) {
+                    let marker: char = *map.get(&bpos).unwrap();
+                    let v = marker.to_digit(10).unwrap_or(1) + 1;
+                    map.insert(bpos, v.to_string().chars().next().unwrap());
+                } else {
+                    map.insert(bpos, b.direction);
+                }
+            }
+
+            map
+        }
+    }
+
+    fn input() -> State {
+        let mut blizzards = Vec::new();
+        let lines = include_str!("../input/day24.txt")
+            .lines()
+            .collect::<Vec<_>>();
+
+
+        let width = (lines[0].len() - 2)  as u32;
+        let height = (lines.len() - 2) as u32;
+
+        for (y, l) in lines.iter().enumerate() {
+            for (x, ch) in l.chars().enumerate() {
+                if (ch == '<') | (ch == '>') | (ch == 'v') | (ch == '^') {
+                    blizzards.push(Blizzard::new(x as i32 - 1, y as i32 - 1, ch));
+                }
+            }
+        }
+
+        State {
+            blizzards,
+            width,
+            height
+        }
+    }
+
+    fn check(p: &Position<i32>, state: &State, map: &SparseMap<char>) -> bool {
+
+        if (p.y == -1) & (p.x == 0) {
+            return true;
+        }
+
+        if is_goal(p, state) {
+            return true;
+        }
+
+        (p.x >= 0) &
+        (p.x < state.width as i32) &
+        (p.y >= 0) &
+        (p.y < state.height as i32) &
+        (!map.contains_key(&p.as_tuple()))
+    }
+
+    fn is_goal(p: &Position<i32>, state: &State) -> bool {
+        (p.y == state.height as i32) & (p.x == state.width as i32 - 1)
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct Node {
+        pos: Position<i32>,
+        cost: u32,
+        heuristic: u32
+    }
+
+    impl PartialOrd for Node {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            let self_total = self.cost + self.heuristic;
+            let other_total = other.cost + other.heuristic;
+            Some(other_total.cmp(&self_total))
+        }
+
+    }
+
+    impl Ord for Node {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            self.partial_cmp(&other).unwrap()
+        }
+    }
+
+    fn a_star(state: &State, start: Position<i32>, goal: Position<i32>, t0: u32) -> Option<u32> {
+        let mut queue: BinaryHeap<Node> = BinaryHeap::new();
+        let mut seen: HashSet<(Position<i32>, u32)> = HashSet::new();
+        let mut map_cache: HashMap<u32, SparseMap<char>> = HashMap::new();
+
+        queue.push(Node { pos: start, cost: t0, heuristic: start.manhatan(&goal)});
+        seen.insert((start, t0));
+
+        while let Some(n) = queue.pop() {
+            //println!("{:?}", n);
+
+            if n.pos == goal {
+                return Some(n.cost);
+            }
+
+            let new_cost = n.cost + 1;
+            let map = map_cache.entry(new_cost).or_insert(state.get_map(new_cost));
+            for p in n.pos.neighbours().filter(|p| check(p, state, &map)) {
+                //println!("{:?}", p);
+                if seen.insert((p, new_cost)) {
+                    queue.push(Node { pos: p,  cost: new_cost, heuristic: p.manhatan(&goal) });
+                }
+            }
+        }
+        None
+    }
+
+    pub fn day24a() -> u32 {
+        let state = input();
+        let start = Position::new(0, -1);
+        let goal = Position::new(state.width as i32 - 1 , state.height as i32);
+        let cost = a_star(&state, start, goal, 0).unwrap();
+
+        cost
+    }
+
+
+    pub fn day24b() -> u32 {
+        let state = input();
+        let start = Position::new(0, -1);
+        let goal = Position::new(state.width as i32 - 1 , state.height as i32);
+        let mut t = 0;
+        t = a_star(&state, start, goal, t).unwrap();
+        t = a_star(&state, goal, start, t).unwrap();
+        t = a_star(&state, start, goal, t).unwrap();
+
+        t
+    }
+
+
+
+}
+
+// }}}
+// day25 Snafu {{{
+
+mod day25 {
+
+
+    fn snafu_to_int(snafu: String) -> i64 {
+
+        snafu
+            .chars()
+            .rev()
+            .enumerate()
+            .fold(0_i64, |acc, (i, ch)| {
+                match (ch, i as u32) {
+                    ('0', _) => acc,
+                    ('1', i) => acc + 5_i64.pow(i),
+                    ('2', i) => acc + 5_i64.pow(i)*2,
+                    ('-', i) => acc + -5_i64.pow(i),
+                    ('=', i) => acc + -5_i64.pow(i)*2,
+                    _ => unreachable!()
+                }
+            })
+    }
+
+    fn int_to_snafu(num: i64) -> String {
+        let mut num = num.clone();
+        let mut snafu = String::new();
+
+        if num == 0 {
+            return "0".to_string();
+        }
+
+        while num > 0 {
+            let digit = num % 5;
+            snafu = digit.to_string() + &snafu;
+            num /= 5;
+            if digit > 2 {
+                num += 1;
+            }
+        }
+
+        snafu = snafu.replace("4", "-");
+        snafu = snafu.replace("3", "=");
+        snafu
+    }
+
+    fn input() -> Vec<String> {
+        include_str!("../input/day25.txt")
+            .lines()
+            .map(|l| {
+                println!("{} -> {}", l, snafu_to_int(l.to_owned()));
+                l.to_string()
+            })
+            .collect()
+    }
+
+    pub fn day25a() -> String {
+        let sum = input()
+            .into_iter()
+            .fold(0, |acc, l| acc + snafu_to_int(l));
+
+        int_to_snafu(dbg!(sum))
+
+    }
+
+
 }
 
 

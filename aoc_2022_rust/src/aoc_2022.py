@@ -739,7 +739,45 @@ print("Part #2 :", grove_coordinates(mix(file2, 10)))
 print("Execution time: {:.6f}s".format((time() - start_time)))
 
 
+#%% day20 jardac
 
+def move(numbers_input, ind):
+    smaller_move = numbers_input[ind] % (modulo - 1)
+    # translate such that the number to move is the last
+    translated_numbers = numbers_input[ind + 1:] + numbers_input[:ind + 1]
+    # actual movement
+    result = translated_numbers[:smaller_move] + [numbers_input[ind]] + translated_numbers[smaller_move:-1]
+    return result
+
+
+with open('input/day20.txt') as file:
+    lines = file.read().splitlines()
+numbers_original = [int(x) for x in lines]
+modulo = len(numbers_original)
+
+# part 1
+numbers = numbers_original.copy()
+for number in numbers_original:
+    numbers = move(numbers, numbers.index(number))
+index_0 = numbers.index(0)
+result_1 = numbers[(index_0 + 1000) % modulo] + numbers[(index_0 + 2000) % modulo] + numbers[(index_0 + 3000) % modulo]
+print(f'20a - sum of numbers on 1000th, 2000th and 3000th position after 0 is {result_1}')
+
+# part 2 - as original
+decryption_key = 811_589_153
+numbers_decrypted_original = [x * decryption_key for x in numbers_original]
+numbers = numbers_decrypted_original.copy()
+for _ in range(10):
+    for number in numbers_decrypted_original:
+        numbers = move(numbers, numbers.index(number))
+
+index_0 = numbers.index(0)
+
+for i in [1000, 2000, 3000]:
+    print(numbers[(i + index_0) % modulo])
+
+result_2 = numbers[(index_0 + 1000) % modulo] + numbers[(index_0 + 2000) % modulo] + numbers[(3000 + index_0) % modulo]
+print(f'20b - using decryption key {decryption_key}, the sum is now {result_2}')
 
 
 

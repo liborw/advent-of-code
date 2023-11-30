@@ -54,10 +54,10 @@ fn main() {
     //aoc_task!(day18b);
 
     use day19::*;
-    aoc_task!(day19a);
+    //aoc_task!(day19a);
     //aoc_task!(day19b);
-    //aoc_task!(day20a);
-    //aoc_task!(day20b);
+    aoc_task!(day20a);
+    aoc_task!(day20b);
     aoc_task!(day21a);
     aoc_task!(day21b);
 
@@ -2082,6 +2082,14 @@ fn day20b() -> i64 {
     code.sort_by_key(|(i, _)| i.clone());
     //println!("{:?}", code.iter().sorted_by_key(|(i, _)| *i).map(|(_, v)| v).collect::<Vec<_>>());
     let zero_i = code.iter().find(|(_, v)| *v == 0).unwrap().0;
+
+    println!("{:?}", zero_i);
+    println!("{:?}", code.iter().find(|(_, v)| v == &7785574744729).unwrap().0);
+
+    for i in [1000, 2000, 3000] {
+        println!("{} {} {}", code[(i - 1 + zero_i) % code_len].1, code[(i + zero_i) % code_len].1, code[(i + 1 + zero_i) % code_len].1);
+    }
+
     [1000, 2000, 3000].into_iter().map(|v| code[(v + zero_i) % code_len].1).sum()
 }
 

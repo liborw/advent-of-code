@@ -2218,7 +2218,7 @@ fn day21b() -> i64 {
 
 
 // }}}
-// day22 {{{
+// day22 Cube {{{
 
 mod day22 {
 
@@ -2276,6 +2276,13 @@ mod day22 {
             y = y + dy;
         }
         (x, y)
+    }
+
+    fn find_oposite_end_on_a_cube(map: &SparseMap<char>, mut x: i32, mut y: i32, dx: i32, dy: i32) -> ((i32, i32), (i32, i32)) {
+
+        if
+
+
     }
 
     pub fn day22a() -> i32 {

@@ -1,12 +1,8 @@
 [package]
-name = "aoc_2023_rust"
+name = "common"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-itertools = "0.12.0"
-regex = "1.10.2"
-took = "0.1.2"
-common = {"path" = "../common/" }

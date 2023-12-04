@@ -2,6 +2,7 @@ mod common;
 mod day01;
 mod day02;
 mod day03;
+mod day04;
 
 use std::env;
 use took::took;
@@ -51,6 +52,11 @@ fn main() {
             use day03::*;
             aoc_task!(day03a);
             aoc_task!(day03b);
+        }
+        4 => {
+            use day04::*;
+            aoc_task!(day04a);
+            aoc_task!(day04b);
         }
         _ => ()
     }

@@ -1,0 +1,10 @@
+[package]
+name = "day"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.12.0"
+rayon = "1.8.0"
+regex = "1.10.2"
+took = "0.1.2"

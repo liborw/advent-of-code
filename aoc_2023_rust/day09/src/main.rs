@@ -18,26 +18,7 @@ fn parse(input: &str) -> impl Iterator<Item = Vec<isize>> + '_ {
     input.lines().map(|l| {
         l.split_whitespace().map(|v| v.parse().unwrap()).collect()
     })
-
 }
-
-//fn predict<I>(it: I) -> isize
-//    where I: IntoIterator<Item = isize> + Clone
-//{
-//
-//    let last = it.clone().into_iter().next().unwrap();
-//    let difs = it.clone().into_iter().map(|(a, b)| a - b);
-//    if let Ok(v) = difs.clone().take(2).all_equal_value() {
-//
-//    }
-//
-//
-//
-//    line.windows(2).map(|w| w[1] - w[0]);
-//
-//    1
-//}
-//
 
 fn predict(line: &Vec<isize>) -> isize {
     let diff: Vec<isize> = line.windows(2).map(|v| v[0] - v[1]).collect();

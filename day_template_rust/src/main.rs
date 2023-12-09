@@ -32,8 +32,20 @@ mod tests {
     }
 
     #[test]
+    fn part1_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part1(input), 1);
+    }
+
+    #[test]
     fn part2_test() {
         let input = include_str!("../input_test.txt");
+        assert_eq!(part2(input), 1);
+    }
+
+    #[test]
+    fn part2_final_test() {
+        let input = include_str!("../input.txt");
         assert_eq!(part2(input), 1);
     }
 }

@@ -88,7 +88,7 @@ fn part2(input: &str) -> usize {
         // i - overall step
         // j - step in the moves array
         moves.iter().enumerate().cycle().enumerate().find_map(|(i, (j, m))| {
-            if &node[2..] == "Z" {
+            if node.ends_with("Z") {
                 goal.push(i);
             }
             //println!("{i:?}: {node:?} {j:?} {states:?}");
@@ -131,8 +131,20 @@ mod tests {
     }
 
     #[test]
+    fn part1_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part1(input), 19637);
+    }
+
+    #[test]
     fn part2_test() {
         let input = include_str!("../input_test03.txt");
         assert_eq!(part2(input), 6);
+    }
+
+    #[test]
+    fn part2_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part2(input), 8811050362409);
     }
 }

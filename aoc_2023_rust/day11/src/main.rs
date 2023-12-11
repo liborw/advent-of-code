@@ -1,4 +1,5 @@
 use common::{map::SparseMap, map::Map, pos::Pos};
+use itertools::Itertools;
 use took::took;
 
 macro_rules! aoc_task {
@@ -66,14 +67,10 @@ fn expansion(map: SparseMap<char>, n: usize) -> SparseMap<char> {
 fn part1(input: &str, n: usize) -> usize {
     let mut map = parse(input);
     map = expansion(map, n);
-    let galaxies: Vec<Pos> = map.into_keys().collect();
-    let mut total_dist = 0;
-    for i in 0..galaxies.len() {
-        for j in i..galaxies.len() {
-            total_dist += galaxies[i].dist_manhatan(galaxies[j]);
-        }
-    }
-    total_dist
+    map.keys()
+       .tuple_combinations()
+       .map(|(a,b)| a.dist_manhatan(*b))
+       .sum()
 }
 
 #[cfg(test)]

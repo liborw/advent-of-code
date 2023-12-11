@@ -33,12 +33,27 @@ impl Pos {
         ]
     }
 
+    pub fn dist_manhatan(&self, other: Self) -> usize {
+        ((self.x - other.x).abs() + (self.y - other.y).abs()) as usize
+    }
+
 }
 
 impl From<(isize, isize)> for Pos {
-
     fn from(value: (isize, isize)) -> Self {
         Pos::new(value.0, value.1)
+    }
+}
+
+impl From<(usize, usize)> for Pos {
+    fn from(value: (usize, usize)) -> Self {
+        Pos::new(value.0 as isize, value.1 as isize)
+    }
+}
+
+impl From<(i32, i32)> for Pos {
+    fn from(value: (i32, i32)) -> Self {
+        Pos::new(value.0 as isize, value.1 as isize)
     }
 }
 

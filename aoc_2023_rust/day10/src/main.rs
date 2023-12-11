@@ -1,3 +1,4 @@
+use image::{ImageBuffer, Rgb, GenericImage};
 use took::took;
 use common::pos::*;
 use common::map::{Map, SparseMap};
@@ -157,7 +158,19 @@ fn part2(input: &str) -> usize {
         }
     });
 
-    oimap.dump('.');
+    // generate image
+    let bb = oimap.bounding_box();
+    let img = ImageBuffer::from_fn(bb.xsize() as u32, bb.ysize() as u32, |x, y| {
+        match oimap.get(&((x,y).into())).unwrap_or(&'.') {
+            'I' => Rgb([255, 0, 0]),
+            'O' => Rgb([0, 255u8, 0u8]),
+            '#' => Rgb([0, 0, 0]),
+             _ => Rgb([255, 255, 255])
+        }
+    });
+
+    img.save("part2.png").unwrap();
+
     oimap.values().filter(|v|v == &&inside).count()
 }
 

@@ -19,6 +19,14 @@ impl BoundingBox {
     pub fn zero() -> Self {
         BoundingBox::new(isize::MAX, isize::MIN, isize::MAX, isize::MIN)
     }
+
+    pub fn xsize(&self) -> usize {
+        (self.x_max + self.x_min).abs() as usize
+    }
+
+    pub fn ysize(&self) -> usize {
+        (self.y_max + self.y_min).abs() as usize
+    }
 }
 
 pub type SparseMap<T> = HashMap<Pos, T>;

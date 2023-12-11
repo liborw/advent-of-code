@@ -57,6 +57,12 @@ impl From<(i32, i32)> for Pos {
     }
 }
 
+impl From<(u32, u32)> for Pos {
+    fn from(value: (u32, u32)) -> Self {
+        Pos::new(value.0 as isize, value.1 as isize)
+    }
+}
+
 impl Add for Pos {
     type Output = Self;
 

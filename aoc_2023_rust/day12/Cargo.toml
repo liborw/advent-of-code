@@ -7,3 +7,5 @@ edition = "2021"
 took = "0.1.2"
 common = {"path" = "../../common"}
 rayon = "1.8.0"
+itertools = "0.12.0"
+memoize = "0.4.1"

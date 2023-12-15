@@ -1,5 +1,4 @@
-use std::str::from_utf8;
-
+use std::{str::from_utf8, fmt::{Display, self}};
 use took::took;
 
 macro_rules! aoc_task {
@@ -20,62 +19,87 @@ struct Image<'a> {
     size: (usize, usize)
 }
 
-
-
-fn find_simetry(img: &Image) -> Option<usize> {
-
-    for l in img.data.iter() {
-        println!("{}", from_utf8(l).unwrap());
+impl<'a> Image<'a> {
+    fn new(lines: Vec<&[u8]>) -> Image {
+        Image{
+            data: lines.clone(),
+            size: (lines.len(), lines[0].len())
+        }
     }
-
-
-
-
-    (0..(img.size.1 - 2)).into_iter().find(|&col| {
-        (0..img.size.0).all(|row| {
-            // distance to neerest edge
-            let len = col.min(img.size.1 - col - 1);
-            (0..=len).all(|e| {
-                println!("V{row}: {}-{}-{}   (e = {e}, len = {len})", col - e, col , col + e + 1 );
-                let v = img.data[row][col - e] == img.data[row][col + e + 1];
-                println!("V{row}: {}-{}-{} => {v}   (e = {e}, len = {len})", col - e, col , col + e + 1 );
-                v
-            })
-        })
-    }).map(|x| x + 1).or_else(|| {
-        (0..(img.size.0 - 2)).into_iter().find(|&row| {
-            (0..img.size.1).all(|col| {
-                // distance to neerest edge
-                let len = row.min(img.size.0 - row - 2);
-                //println!("l: {l}, i: {i}, edge: {edge}");
-                (0..=len).all(|e| {
-                    let v = img.data[row - e][col] == img.data[row + e + 1][col];
-                    println!("H{col}: {}-{}-{} => {v}   (e = {e}, len = {len})", row - e, row , row + e + 1);
-                    v
-                })
-            })
-        }).map(|x| (x + 1) * 100)
-    })
 }
+
+impl Display for Image<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+
+        self.data.iter().for_each(|l| {
+            s.push_str(from_utf8(l).unwrap());
+            s.push('\n');
+        });
+        write!(f, "{}", s)
+    }
+}
+
+
+fn simetry_error(img: &Image) -> Vec<(usize, usize)> {
+    let mut err = Vec::new();
+
+    (0..(img.size.1 - 1)).into_iter().for_each(|col| {
+        let e = (0..img.size.0).map(|row| {
+            // distance to neerest edge
+            let len = col.min(img.size.1 - col - 2);
+            (0..=len).map(|e| {
+                let left = col - e;
+                let right = col + e + 1;
+                if img.data[row][left] == img.data[row][right] {
+                    0
+                } else {
+                    1
+                }
+            }).sum::<usize>()
+        }).sum();
+        err.push((e, col + 1));
+    });
+
+    (0..(img.size.0 - 1)).into_iter().for_each(|row| {
+        let e = (0..img.size.1).map(|col| {
+            // distance to neerest edge
+            let len = row.min(img.size.0 - row - 2);
+            //println!("l: {l}, i: {i}, edge: {edge}");
+            (0..=len).map(|e| {
+                let left = row - e;
+                let right = row + e + 1;
+                if img.data[left][col] == img.data[right][col] {
+                    0
+                } else {
+                    1
+                }
+            }).sum::<usize>()
+        }).sum();
+        err.push((e, (row + 1) * 100));
+    });
+
+    err
+}
+
+
 
 fn parse(input: &str) -> Vec<Image> {
     input.split("\n\n").map(|blk| {
-        let data: Vec<&[u8]> = blk.lines().map(|l| l.as_bytes()).collect();
-        let size = (data.len(), data[0].len());
-        Image{data, size}
+        Image::new(blk.lines().map(|l| l.as_bytes()).collect::<Vec<&[u8]>>())
     }).collect()
 }
 
 fn part1(input: &str) -> usize {
-    parse(input).into_iter().enumerate().take(7).filter_map(|(i, img)| {
-        let u = find_simetry(&img);
-        println!("{i}: {u:?}");
-        u
+    parse(input).into_iter().map(|img| {
+        simetry_error(&img).iter().find(|&(e, _)| *e == 0).unwrap().1
     }).sum()
 }
 
 fn part2(input: &str) -> usize {
-    1
+    parse(input).into_iter().map(|img| {
+        simetry_error(&img).iter().find(|&(e, _)| *e == 1).unwrap().1
+    }).sum()
 }
 
 #[cfg(test)]
@@ -91,18 +115,18 @@ mod tests {
     #[test]
     fn part1_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input), 1);
+        assert_eq!(part1(input), 27300);
     }
 
-    // #[test]
-    // fn part2_test() {
-    //     let input = include_str!("../input_test.txt");
-    //     assert_eq!(part2(input), 1);
-    // }
+    #[test]
+    fn part2_test() {
+        let input = include_str!("../input_test.txt");
+        assert_eq!(part2(input), 400);
+    }
 
-    // #[test]
-    // fn part2_final_test() {
-    //     let input = include_str!("../input.txt");
-    //     assert_eq!(part2(input), 1);
-    // }
+    #[test]
+    fn part2_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part2(input), 29276);
+    }
 }

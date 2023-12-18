@@ -109,14 +109,14 @@ fn part1(input: &str) -> usize {
     println!("{dist:?}");
 
     let bb = map.bounding_box();
-    *dist.get(&(bb.x_max, bb.x_max).into()).unwrap()
+    *dist.get(&(bb.x_max, bb.y_max).into()).unwrap()
 }
 
 fn part2(input: &str) -> usize {
     let map = parse(input);
 
-    let mut dist: HashMap<Pos, usize> = HashMap::new();
-    dist.insert((0,0).into(), 0);
+    let mut dist: HashMap<Pos, (usize, Option<Pos>)> = HashMap::new();
+    dist.insert((0,0).into(), (0, None));
 
     let mut open: BinaryHeap<State> = BinaryHeap::new();
     open.push(State::new((0, 0).into(), Direction::Right, 1, 0));
@@ -132,8 +132,6 @@ fn part2(input: &str) -> usize {
             continue;
         }
 
-        println!("{state}");
-
         // Add current node to closed
         closed.insert(state.key());
 
@@ -141,10 +139,9 @@ fn part2(input: &str) -> usize {
         if let Some(next_pos_e) = map.get(&next_pos) {
             let next_e = state.cost + next_pos_e;
 
-
-            let &cur_dist = dist.get(&next_pos).unwrap_or(&usize::MAX);
-            if cur_dist > next_e {
-                dist.insert(next_pos, next_e);
+            let &(cur_dist, _) = dist.get(&next_pos).unwrap_or(&(usize::MAX, None));
+            if cur_dist > next_e && state.step >= 4 {
+                dist.insert(next_pos, (next_e, Some(state.pos)));
             }
 
             // Add ne nodes to open
@@ -158,10 +155,9 @@ fn part2(input: &str) -> usize {
             }
         }
     };
-    println!("{dist:?}");
 
     let bb = map.bounding_box();
-    *dist.get(&(bb.x_max, bb.x_max).into()).unwrap()
+    dist.get(&(bb.x_max, bb.y_max).into()).unwrap().0
 }
 
 #[cfg(test)]
@@ -184,6 +180,7 @@ mod tests {
     fn part1_final_test() {
         let input = include_str!("../input.txt");
         assert_eq!(part1(input), 1138);
+
     }
 
     #[test]
@@ -198,9 +195,9 @@ mod tests {
         assert_eq!(part2(input), 71);
     }
 
-   //  #[test]
-   //  fn part2_final_test() {
-   //      let input = include_str!("../input.txt");
-   //      assert_eq!(part2(input), 1);
-   //  }
+    #[test]
+    fn part2_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part2(input), 1312);
+    }
 }

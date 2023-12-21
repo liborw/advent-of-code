@@ -16,19 +16,6 @@ fn main() {
     aoc_task!(|| part2(input));
 }
 
-//fn parse_grid<T: Copy>(
-//    input: &str,
-//    elem_fn: impl Fn(&char) -> Option<T>
-//) -> SparseMap<T> {
-//    input.lines().enumerate().map(|(x, l)| {
-//        l.chars().enumerate().filter_map(|(y, c)| {
-//            elem_fn(&c).take().and_then(|v| {
-//                Some(((x, y).into(), v))
-//            })
-//        })
-//    }).flatten().collect()
-//}
-
 fn parse(input: &str) -> SparseMap<char> {
     input.lines().enumerate().map(move |(x, l)| {
         l.chars().enumerate().filter_map(move |(y, c)| {

@@ -1,9 +1,8 @@
-use std::{str::FromStr, fmt::Display, collections::HashMap, iter::once};
+use std::{collections::HashMap, iter::once};
 
 use itertools::Itertools;
 use rayon::prelude::*;
 use took::took;
-use memoize::memoize;
 
 macro_rules! aoc_task {
     ($f:expr) => {
@@ -30,11 +29,15 @@ fn parse(input: &str) -> Vec<(&str, Vec<usize>)> {
          }).collect()
 }
 
-type Cache = HashMap<(usize, usize, usize), usize>;
+type Cache = HashMap<(usize, usize, Option<usize>), usize>;
 
 
-#[memoize]
-fn ways(s: &[u8], check: &[usize], cur: Option<usize>) -> usize {
+fn ways(cache: &mut Cache, s: &[u8], check: &[usize], cur: Option<usize>) -> usize {
+
+    let key = (s.len(), check.len(), cur);
+    if cache.contains_key(&key) {
+        return *cache.get(&key).unwrap();
+    }
 
     if s.is_empty() {
         return match (cur, check.len()) {
@@ -48,29 +51,33 @@ fn ways(s: &[u8], check: &[usize], cur: Option<usize>) -> usize {
         return 0;
     }
 
-    match (s[0], cur) {
+    let val = match (s[0], cur) {
         (b'.', Some(x)) if x != check[0] => 0,
-        (b'.', Some(_)) => ways(&s[1..], &check[1..], None),
-        (b'.', None)    => ways(&s[1..], check, None),
-        (b'#', Some(x)) => ways(&s[1..], check, Some(x+1)),
-        (b'#', None)    => ways(&s[1..], check, Some(1)),
+        (b'.', Some(_)) => ways(cache, &s[1..], &check[1..], None),
+        (b'.', None)    => ways(cache, &s[1..], check, None),
+        (b'#', Some(x)) => ways(cache, &s[1..], check, Some(x+1)),
+        (b'#', None)    => ways(cache, &s[1..], check, Some(1)),
         (b'?', Some(x)) => {
-            let ans = ways(&s[1..], check, Some(x+1));
+            let ans = ways(cache, &s[1..], check, Some(x+1));
             if x == check[0] {
-                ans + ways(&s[1..], &check[1..], None) // has .
+                ans + ways(cache, &s[1..], &check[1..], None) // has .
             } else {
                 ans
             }
         },
-        (b'?', None) => ways(&s[1..], check, Some(1)) + ways(&s[1..], check, None),
+        (b'?', None) => ways(cache, &s[1..], check, Some(1)) + ways(cache, &s[1..], check, None),
         _ => unreachable!()
-    }
+    };
+
+    cache.insert(key, val);
+    val
 }
 
 
 fn part1(input: &str) -> usize {
     parse(input).into_par_iter().map(|(s, check)| {
-        ways(s.as_bytes(), &check, None)
+        let mut cache = Cache::new();
+        ways(&mut cache, s.as_bytes(), &check, None)
     }).sum()
 }
 
@@ -78,8 +85,8 @@ fn part2(input: &str) -> usize {
     parse(input).into_par_iter().map(|(s, check)| {
         let s = once(s).cycle().take(5).join("?");
         let check = once(check).cycle().take(5).flatten().collect::<Vec<usize>>();
-        let n = ways(s.as_bytes(), &check, None);
-        println!("{s}, {check:?} => {n}");
+        let mut cache = Cache::new();
+        let n = ways(&mut cache, s.as_bytes(), &check, None);
         n
     }).sum()
 }

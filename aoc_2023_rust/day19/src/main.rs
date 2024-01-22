@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr, hash::Hasher};
+use std::{collections::HashMap, str::FromStr, hash::Hasher, fmt::{Display, format}};
 
 use took::took;
 
@@ -181,8 +181,106 @@ fn part1(input: &str) -> usize {
     }).sum()
 }
 
+const MAX: usize = 4000;
+const MIN: usize = 1;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum Range {
+    Empty,
+    Bounds(usize, usize)
+}
+
+impl Default for Range {
+    fn default() -> Self {
+        Range::Bounds(MIN, MAX)
+    }
+}
+
+impl Range {
+    fn new(start: usize, end: usize) -> Self {
+        Range::Bounds(start, end)
+    }
+
+    fn merge(&mut self, other: &Range) {
+        use Range::*;
+
+        *self = match (*self, *other) {
+            (Empty, _) => Empty,
+            (_, Empty) => Empty,
+            (Bounds(l0, u0), Bounds(l1, u1)) => {
+                if l0 < u1 && l1 < u0 {
+                    Bounds(l0.max(l1), u0.min(u1))
+                } else {
+                    Empty
+                }
+            },
+        };
+    }
+
+    fn size(&self) -> usize {
+        use Range::*;
+        match self {
+            Empty => 0,
+            Bounds(l, u) => u - l + 1
+        }
+    }
+}
+
+
+impl Display for Range {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Range::*;
+        match self {
+            Empty => write!(f, "[]"),
+            Bounds(l, u) => write!(f, "[{l}, {u}]"),
+        }
+    }
+}
+
+
+fn solve(wfs: &HashMap<String, Workflow>, agg: HashMap<usize, Range>, outcome: &Outcome, hist: String) -> usize {
+
+    match outcome {
+        Outcome::Reject => 0,
+        Outcome::Next(next) => {
+            let mut agg_next = agg.clone();
+            wfs.get(next).unwrap().rules.iter().map(|r| {
+                match r {
+                    Rule::Less(out, cat, v) => {
+                        let mut agg_pos = agg_next.clone();
+                        agg_pos.entry(*cat).or_default().merge(&Range::new(MIN, v - 1));
+                        agg_next.entry(*cat).or_default().merge(&Range::new(*v, MAX));
+                        solve(wfs, agg_pos, out, format!("{hist}->{next}"))
+                    },
+                    Rule::More(out, cat, v) => {
+                        let mut agg_pos = agg_next.clone();
+                        agg_pos.entry(*cat).or_default().merge(&Range::new(v + 1, MAX));
+                        agg_next.entry(*cat).or_default().merge(&Range::new(MIN, *v));
+                        solve(wfs, agg_pos, out, format!("{hist}->{next}"))
+                    }
+                    Rule::Default(out) => {
+                        solve(wfs, agg_next.clone(), out, format!("{hist}->{next}"))
+                    }
+                }
+            }).sum()
+        },
+        Outcome::Accept => {
+            //println!("{hist}");
+            ['x', 'm', 'a', 's'].into_iter().enumerate().map(|(i, key)| {
+                let mut agg = agg.clone();
+                let r = agg.entry(i).or_default();
+                let s = r.size();
+                //println!("{key}: {r} {s}");
+                s
+            }).product()
+        }
+    }
+}
+
+
 fn part2(input: &str) -> usize {
-    1
+    let (wfs, _) = parse(input);
+    solve(&wfs, HashMap::new(), &Outcome::Next("in".to_string()), "".to_string())
 }
 
 #[cfg(test)]
@@ -201,11 +299,11 @@ mod tests {
         assert_eq!(part1(input), 476889);
     }
 
-    // #[test]
-    // fn part2_test() {
-    //     let input = include_str!("../input_test.txt");
-    //     assert_eq!(part2(input), 1);
-    // }
+    #[test]
+    fn part2_test() {
+        let input = include_str!("../input_test.txt");
+        assert_eq!(part2(input), 167409079868000);
+    }
 
     // #[test]
     // fn part2_final_test() {

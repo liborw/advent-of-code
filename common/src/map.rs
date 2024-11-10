@@ -34,6 +34,7 @@ pub type SparseMap<T> = HashMap<Pos, T>;
 pub trait Map<T> {
     fn bounding_box(&self) -> BoundingBox;
     fn dump(&self, bg: T) -> ();
+    fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
 }
 
 impl<T: Display> Map<T> for SparseMap<T> {
@@ -61,4 +62,13 @@ impl<T: Display> Map<T> for SparseMap<T> {
             println!();
         }
     }
+
+    fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T> {
+        input.lines().enumerate().map(|(row, l)| {
+            l.chars().enumerate().filter_map(move |(col, c)| {
+                elem_fn(c).map(|v| ((row, col).into(), v))
+            })
+        }).flatten().collect()
+    }
 }
+

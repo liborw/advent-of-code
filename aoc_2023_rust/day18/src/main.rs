@@ -37,46 +37,48 @@ fn parse(input: &str) -> Vec<Command> {
     }).collect()
 }
 
-fn part1(input: &str) -> isize {
-    let plan = parse(input);
-    let mut edges: Vec<(Pos, Direction, isize)> = Vec::new();
-    let mut pos = Pos::new(0,0);
+fn parse2(input: &str) -> Vec<Command> {
+    input.lines().map(|l| {
+        let code = l.split_whitespace().skip(2).next().unwrap();
+        let len = isize::from_str_radix(&code[2..7], 16).unwrap();
 
-    plan.iter().for_each(|c| {
-        edges.push((pos, c.dir, c.len));
-        pos = (0..c.len).fold(pos, |p, _| c.dir.move_pos(&p));
-    });
-
-    let mut map: SparseMap<char> = SparseMap::new();
-    edges.iter().for_each(|&(p, _, _)| {
-        map.insert(p, '#');
-    });
-    map.dump('.');
-
-    let xmax = edges.iter().map(|(p, _, _)| p.x).max().unwrap();
-    println!("Xmin: {xmax}");
-    println!("Edges: {edges:?}");
-
-    edges.iter().fold(0,|v, &(p, d, l)| {
-
-        match d {
-            Direction::Left => {
-                let delta = -(xmax - p.x) * l;
-                println!("Left  {v} + {delta} = {} ", v + delta);
-                v + delta
-            },
-            Direction::Right => {
-                let delta = (xmax - p.x + 1) * (l + 1);
-                println!("Right  {v} + {delta} = {} ", v + delta);
-                v + delta
-            }
-            _ => v
-        }
-    })
+        let dir = match i8::from_str_radix(&code[7..8], 16).unwrap() {
+            0 => Direction::Right,
+            1 => Direction::Down,
+            2 => Direction::Left,
+            3 => Direction::Up,
+            s  => panic!("Unknown command: {s}")
+        };
+        Command{ dir, len}
+    }).collect()
 }
 
-fn part2(input: &str) -> usize {
-    1
+fn solve_poly(poly: &[Command]) -> isize {
+    let border_point_count: isize = poly.iter().map(|c| c.len).sum();
+
+    use Direction::*;
+    let val = poly.iter().fold((0, 0), |(v, x), c| {
+        match c.dir {
+            Up => (v, x - c.len),
+            Down => (v, x + c.len),
+            Left => (v + (c.len * x), x),
+            Right => (v - (c.len * x), x),
+        }
+    }).0;
+
+    val + border_point_count / 2 + 1
+
+}
+
+fn part1(input: &str) -> isize {
+    let plan = parse(input);
+    solve_poly(&plan)
+}
+
+fn part2(input: &str) -> isize {
+    let plan = parse2(input);
+    println!("{plan:?}");
+    solve_poly(&plan)
 }
 
 #[cfg(test)]
@@ -89,21 +91,25 @@ mod tests {
         assert_eq!(part1(input), 62);
     }
 
-    // #[test]
-    // fn part1_final_test() {
-    //     let input = include_str!("../input.txt");
-    //     assert_eq!(part1(input), 40745);
-    // }
+    #[test]
+    fn part1_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part1(input), 40745);
+    }
 
-    //#[test]
-    //fn part2_test() {
-    //    let input = include_str!("../input_test.txt");
-    //    assert_eq!(part2(input), 1);
-    //}
+    #[test]
+    fn part2_test() {
+        let input = include_str!("../input_test.txt");
+        assert_eq!(part2(input), 952408144115);
+    }
 
-    //#[test]
-    //fn part2_final_test() {
-    //    let input = include_str!("../input.txt");
-    //    assert_eq!(part2(input), 1);
-    //}
+    #[test]
+    fn part2_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part2(input), 1);
+    }
 }
+
+
+
+

@@ -1,11 +1,6 @@
 use took::took;
 
-macro_rules! aoc_task {
-    ($f:expr) => {
-        let (took, result) = took($f);
-        println!("{} took: {} result: {}", stringify!($f), took, result);
-    };
-}
+
 
 fn main() {
     let input = include_str!("../input.txt");

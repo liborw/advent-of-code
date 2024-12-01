@@ -1,0 +1,8 @@
+[package]
+name = "day"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = {"path" = "../common"}
+itertools = "0.13.0"

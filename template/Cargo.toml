@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-took = "0.1.2"
-common = {"path" = "../../common"}
+common = {"path" = "../common"}

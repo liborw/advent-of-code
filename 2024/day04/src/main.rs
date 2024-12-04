@@ -42,7 +42,7 @@ fn part1(input: &str) -> usize {
     xs.into_iter()
       .flat_map(|p| {
         Direction::all().into_iter().map(|d| {
-                (0..4).map(|i| map.get(&(p + Pos::from(&d).scale(i))).unwrap_or(&'-')).collect()
+                (0..4).map(|i| map.get(&(p.r#move(&d, i + 1))).unwrap_or(&'-')).collect()
             }).collect::<Vec<String>>()
         })
      .filter(|v| v == "XMAS")

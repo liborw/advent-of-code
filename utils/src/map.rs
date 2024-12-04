@@ -12,8 +12,18 @@ impl Pos {
         Pos{x, y}
     }
 
-    pub fn scale(&self, n: i32) -> Self {
-        Self{x: self.x * n, y: self.y * n}
+    pub fn r#move(&self, dir: &Direction, steps: i32) -> Self {
+        use Direction::*;
+        match dir {
+            North => Pos::new(0, steps),
+            NorthWest => Pos::new(-steps, steps),
+            West => Pos::new(-steps, 0),
+            SouthWest => Pos::new(-steps, -steps),
+            South => Pos::new(0,-steps),
+            SouthEast => Pos::new(steps, -steps),
+            East => Pos::new(steps, 0),
+            NorthEast => Pos::new(steps, steps)
+        }
     }
 }
 
@@ -50,23 +60,6 @@ impl Direction {
         ]
     }
 }
-
-impl From<&Direction> for Pos {
-
-    fn from(value: &Direction) -> Self {
-        match value {
-            Direction::North => Pos::new(0, 1),
-            Direction::NorthWest => Pos::new(-1, 1),
-            Direction::West => Pos::new(-1, 0),
-            Direction::SouthWest => Pos::new(-1, -1),
-            Direction::South => Pos::new(0,-1),
-            Direction::SouthEast => Pos::new(1, -1),
-            Direction::East => Pos::new(1, 0),
-            Direction::NorthEast => Pos::new(1, 1)
-        }
-    }
-}
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Bounds {

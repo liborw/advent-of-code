@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, ops::{Add, Mul}};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pos {
@@ -10,7 +10,67 @@ impl Pos {
     pub fn new(x: i32, y: i32) -> Self {
         Pos{x, y}
     }
+
+    pub fn scale(&self, n: i32) -> Self {
+        Self{x: self.x * n, y: self.y * n}
+    }
+
+    pub fn next_in_direction(&self, dir: &Direction, n: i32) -> Self {
+        *self + Pos::from(dir).scale(n)
+    }
 }
+
+impl Add for Pos {
+    type Output = Pos;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self{x: self.x + rhs.x, y: self.y + rhs.y}
+    }
+}
+
+
+pub enum Direction {
+    North,
+    South,
+    West,
+    East,
+    NorthWest,
+    NorthEast,
+    SouthWest,
+    SouthEast
+}
+
+impl Direction {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Direction::North,
+            Direction::NorthWest,
+            Direction::West,
+            Direction::SouthWest,
+            Direction::South,
+            Direction::SouthEast,
+            Direction::East,
+            Direction::NorthEast
+        ]
+    }
+}
+
+impl From<&Direction> for Pos {
+
+    fn from(value: &Direction) -> Self {
+        match value {
+            Direction::North => Pos::new(0, 1),
+            Direction::NorthWest => Pos::new(-1, 1),
+            Direction::West => Pos::new(-1, 0),
+            Direction::SouthWest => Pos::new(-1, -1),
+            Direction::South => Pos::new(0,-1),
+            Direction::SouthEast => Pos::new(1, -1),
+            Direction::East => Pos::new(1, 0),
+            Direction::NorthEast => Pos::new(1, 1)
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Bounds {

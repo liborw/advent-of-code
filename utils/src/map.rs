@@ -1,10 +1,11 @@
-use std::{collections::HashMap, fmt::Display, ops::{Add, Mul}};
+use std::{collections::HashMap, fmt::Display, ops::Add};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pos {
     pub x: i32,
     pub y: i32
 }
+
 
 impl Pos {
     pub fn new(x: i32, y: i32) -> Self {
@@ -13,10 +14,6 @@ impl Pos {
 
     pub fn scale(&self, n: i32) -> Self {
         Self{x: self.x * n, y: self.y * n}
-    }
-
-    pub fn next_in_direction(&self, dir: &Direction, n: i32) -> Self {
-        *self + Pos::from(dir).scale(n)
     }
 }
 
@@ -27,7 +24,6 @@ impl Add for Pos {
         Self{x: self.x + rhs.x, y: self.y + rhs.y}
     }
 }
-
 
 pub enum Direction {
     North,

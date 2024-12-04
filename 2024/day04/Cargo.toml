@@ -1,7 +1,7 @@
 [package]
-name = "day"
+name = "day04"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-common = {"path" = "../common"}
+utils = {"path" = "../../utils"}

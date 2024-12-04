@@ -1,4 +1,4 @@
-use common::{aoc_task, took};
+use utils::{aoc_task, took};
 
 
 
@@ -75,6 +75,6 @@ mod tests {
     #[test]
     fn part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
+        assert_eq!(part2(input), 373);
     }
 }

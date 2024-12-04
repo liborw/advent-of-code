@@ -1,4 +1,4 @@
-use common::{aoc_task, took};
+use utils::{aoc_task, took};
 use itertools::Itertools;
 
 fn main() {

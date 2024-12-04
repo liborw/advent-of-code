@@ -1,7 +1,6 @@
 use std::{char, collections::HashMap};
 
-use common::{aoc_task, map::{Direction, Map, Pos}, took};
-
+use utils::{aoc_task, map::{Pos, Direction}, took};
 
 
 fn main() {
@@ -92,7 +91,7 @@ mod tests {
     #[test]
     fn part1_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input), 1);
+        assert_eq!(part1(input), 2532);
     }
 
     #[test]
@@ -104,6 +103,6 @@ mod tests {
     #[test]
     fn part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
+        assert_eq!(part2(input), 1941);
     }
 }

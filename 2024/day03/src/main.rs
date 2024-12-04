@@ -1,4 +1,4 @@
-use common::{took, aoc_task};
+use utils::{took, aoc_task};
 use regex::Regex;
 
 
@@ -72,6 +72,6 @@ mod tests {
     #[test]
     fn part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
+        assert_eq!(part2(input), 90044227);
     }
 }

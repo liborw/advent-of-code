@@ -1,8 +1,8 @@
 [package]
-name = "day"
+name = "day03"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-common = {"path" = "../common"}
+utils = {"path" = "../../utils"}
 regex = "1.11.1"

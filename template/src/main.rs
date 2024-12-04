@@ -1,4 +1,4 @@
-use took::took;
+use common::{took, aoc_task};
 
 
 

@@ -9,21 +9,31 @@ pub struct Pos {
 
 impl Pos {
     pub fn new(x: i32, y: i32) -> Self {
-        Pos{x, y}
+        Self{x, y}
+    }
+
+    pub fn zero() -> Self {
+        Self{x: 0, y: 0}
     }
 
     pub fn r#move(&self, dir: &Direction, steps: i32) -> Self {
         use Direction::*;
         match dir {
-            North => Pos::new(0, steps),
-            NorthWest => Pos::new(-steps, steps),
-            West => Pos::new(-steps, 0),
-            SouthWest => Pos::new(-steps, -steps),
-            South => Pos::new(0,-steps),
-            SouthEast => Pos::new(steps, -steps),
-            East => Pos::new(steps, 0),
-            NorthEast => Pos::new(steps, steps)
+            North => *self + (0, steps).into(),
+            NorthWest => *self + (-steps, steps).into(),
+            West => *self + (-steps, 0).into(),
+            SouthWest => *self + (-steps, -steps).into(),
+            South => *self + (0,-steps).into(),
+            SouthEast => *self + (steps, -steps).into(),
+            East => *self + (steps, 0).into(),
+            NorthEast => *self + (steps, steps).into()
         }
+    }
+}
+
+impl From<(i32, i32)> for Pos {
+    fn from(value: (i32, i32)) -> Self {
+        Pos::new(value.0, value.1)
     }
 }
 
@@ -80,14 +90,21 @@ impl Bounds {
     }
 }
 
+pub type SparseMap<T> = HashMap<Pos, T>;
+
 pub trait Map<T> {
     fn bounds(&self) -> Bounds;
     fn print(&self, bg: T);
     fn print_with_bounds(&self, bg: T, bounds: &Bounds);
+    fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
+    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Pos>;
 }
 
+impl<T: Display> Map<T> for SparseMap<T> {
 
-impl<T: Display> Map<T> for HashMap<Pos, T> {
+    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Pos> {
+        self.iter().filter_map(|(&k, v)| predicate(v).then_some(k))
+    }
 
     fn bounds(&self) -> Bounds {
         let mut b = Bounds::zero();
@@ -119,5 +136,13 @@ impl<T: Display> Map<T> for HashMap<Pos, T> {
             }
             println!();
         }
+    }
+
+    fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T> {
+        input.lines().enumerate().flat_map(|(row, l)| {
+            l.chars().enumerate().filter_map(move |(col, c)| {
+                elem_fn(c).map(|v| ((row as i32, col as i32).into(), v))
+            })
+        }).collect()
     }
 }

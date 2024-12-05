@@ -1,6 +1,6 @@
 use std::{char, collections::HashMap};
 
-use utils::{aoc_task, map::{Pos, Direction}, took};
+use utils::{aoc_task, map::{Direction, Map, Pos, SparseMap}, took};
 
 
 fn main() {
@@ -9,40 +9,13 @@ fn main() {
     aoc_task!(|| part2(input));
 }
 
-fn parse(input: &str) -> HashMap<Pos, char> {
-    let mut map: HashMap<Pos, char> = HashMap::new();
-    input
-        .lines()
-        .enumerate()
-        .for_each(|(y, l)| {
-            l.chars()
-             .enumerate()
-             .for_each(|(x, c)| {
-                    map.insert(Pos::new(x as i32, y as i32), c);
-                })
-        });
-    map
-}
-
-
 fn part1(input: &str) -> usize {
-    let map = parse(input);
+    let map = SparseMap::from_str(input, &|c| Some(c));
 
-    // find all X
-    let xs: Vec<Pos> = map.iter()
-        .filter_map(|(&k, &v)| {
-            if v == 'X' {
-                Some(k)
-            } else {
-                None
-            }})
-        .collect();
-
-    // from every X go to all directions
-    xs.into_iter()
+    map.find_all(&|&v| v == 'X')
       .flat_map(|p| {
         Direction::all().into_iter().map(|d| {
-                (0..4).map(|i| map.get(&(p.r#move(&d, i + 1))).unwrap_or(&'-')).collect()
+                (0..4).map(|i| map.get(&(p.r#move(&d, i))).unwrap_or(&'-')).collect()
             }).collect::<Vec<String>>()
         })
      .filter(|v| v == "XMAS")
@@ -61,7 +34,7 @@ fn is_x_mas(p: &Pos, map: &HashMap<Pos, char>) -> bool {
 }
 
 fn part2(input: &str) -> usize {
-    let map = parse(input);
+    let map = SparseMap::from_str(input, &|c| Some(c));
 
     // find all X
     let xs: Vec<Pos> = map.iter()

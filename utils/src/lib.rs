@@ -1,6 +1,8 @@
 pub mod sparse_map;
 pub mod map;
-pub mod direction;
+pub mod grid;
+pub mod position;
+
 
 pub use took::took;
 

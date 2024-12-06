@@ -1,11 +1,8 @@
-use std::{fmt, ops::Index, str::FromStr};
+use std::{fmt, ops::{Index, IndexMut}, str::FromStr};
 
+use crate::position::Position;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub struct Pos {
-    row: usize,
-    col: usize
-}
+pub type Pos = Position<isize>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Grid<T> {
@@ -19,12 +16,16 @@ impl<T> Grid<T> {
         (self.height, self.width)
     }
 
-    pub fn get(&self, p: Pos) -> Option<&T> {
-        if p.row < self.height && p.col < self.width {
-            Some(&self[(p.row, p.col)])
+    pub fn get(&self, p: &Pos) -> Option<&T> {
+        if (p.row as usize) < self.height && (p.col as usize) < self.width {
+            Some(&self[(p.row as usize, p.col as usize)])
         } else {
             None
         }
+    }
+
+    pub fn insert(&mut self, p: &Pos, v: T) {
+        self[(p.row as usize, p.col as usize)] = v
     }
 
     pub fn find<'a>(&'a self, predicate: impl Fn(&T) -> bool + 'a) -> impl Iterator<Item=Pos> + 'a {
@@ -33,7 +34,7 @@ impl<T> Grid<T> {
             .enumerate()
             .flat_map(move |(i, val)| {
                 if predicate(val) {
-                    Some(Pos{row: i / self.width, col: i % self.width})
+                    Some(Pos{row: (i / self.width) as isize, col: (i % self.width) as isize})
                 } else {
                     None
                 }
@@ -83,6 +84,12 @@ impl<T> Index<(usize, usize)> for Grid<T> {
     }
 }
 
+impl<T> IndexMut<(usize, usize)> for Grid<T> {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        let (row, col) = index;
+        &mut self.grid[row*self.width + col]
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -112,14 +119,27 @@ mod tests {
     fn to_str_test() {
         let g = Grid::from_str(TEST_STR).unwrap();
         assert_eq!(g.to_string(), TEST_STR.to_string());
+    }
 
+    #[test]
+    fn get_test() {
+        let g = Grid::from_str(TEST_STR).unwrap();
+        assert_eq!(g.get(&Pos::new(0, 0)), Some(&'1'));
+        assert_eq!(g.get(&Pos::new(2, 0)), None);
+    }
+
+    #[test]
+    fn insert_test() {
+        let mut g = Grid::from_str(TEST_STR).unwrap();
+        let p = Pos::new(1, 1);
+        g.insert(&p, 'X');
+        assert_eq!(g.get(&p), Some(&'X'));
     }
 
     #[test]
     fn find_test() {
         let g = Grid::from_str(TEST_STR).unwrap();
         assert_eq!(g.find(|x| x == &'2').collect::<Vec<_>>(), vec![Pos{row: 0, col:1}] );
-
     }
 
 }

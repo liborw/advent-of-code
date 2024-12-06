@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, ops::Add};
+use std::{char::{self, ParseCharError, TryFromCharError}, collections::HashMap, fmt::Display, ops::Add};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pos {
@@ -19,14 +19,14 @@ impl Pos {
     pub fn r#move(&self, dir: &Direction, steps: i32) -> Self {
         use Direction::*;
         match dir {
-            North => *self + (0, steps).into(),
-            NorthWest => *self + (-steps, steps).into(),
+            North => *self + (0, -steps).into(),
+            NorthWest => *self + (-steps, -steps).into(),
             West => *self + (-steps, 0).into(),
-            SouthWest => *self + (-steps, -steps).into(),
-            South => *self + (0,-steps).into(),
-            SouthEast => *self + (steps, -steps).into(),
+            SouthWest => *self + (-steps, steps).into(),
+            South => *self + (0,steps).into(),
+            SouthEast => *self + (steps, steps).into(),
             East => *self + (steps, 0).into(),
-            NorthEast => *self + (steps, steps).into()
+            NorthEast => *self + (steps, -steps).into()
         }
     }
 }
@@ -45,6 +45,7 @@ impl Add for Pos {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Direction {
     North,
     South,
@@ -69,7 +70,39 @@ impl Direction {
             Direction::NorthEast
         ]
     }
+
+    pub fn turn_right_90(self) -> Self {
+        use Direction::*;
+        match self {
+            North => East,
+            NorthWest => NorthEast,
+            West => North,
+            SouthWest => NorthWest,
+            South => West,
+            SouthEast => SouthWest,
+            East => South,
+            NorthEast => SouthEast
+        }
+    }
 }
+
+impl TryFrom<&char> for Direction {
+
+    type Error = &'static str;
+
+    fn try_from(value: &char) -> Result<Self, Self::Error> {
+        use Direction::*;
+        match value {
+            '^' => Ok(North),
+            '>' => Ok(East),
+            'v' => Ok(South),
+            '<' => Ok(West),
+            _   => Err("Wrong character")
+        }
+    }
+
+}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Bounds {
@@ -123,7 +156,7 @@ impl<T: Display> Map<T> for SparseMap<T> {
         let b = self.bounds();
         for r in b.x_min..=b.x_max  {
             for c in b.y_min..=b.y_max {
-                print!("{}", self.get(&Pos::new(r, c)).unwrap_or(&bg));
+                print!("{}", self.get(&Pos::new(c, r)).unwrap_or(&bg));
             }
             println!();
         }
@@ -132,7 +165,7 @@ impl<T: Display> Map<T> for SparseMap<T> {
     fn print_with_bounds(&self, bg: T, bounds: &Bounds) {
         for r in bounds.x_min..=bounds.x_max  {
             for c in bounds.y_min..=bounds.y_max {
-                print!("{}", self.get(&Pos::new(r, c)).unwrap_or(&bg));
+                print!("{}", self.get(&Pos::new(c, r)).unwrap_or(&bg));
             }
             println!();
         }
@@ -141,7 +174,7 @@ impl<T: Display> Map<T> for SparseMap<T> {
     fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T> {
         input.lines().enumerate().flat_map(|(row, l)| {
             l.chars().enumerate().filter_map(move |(col, c)| {
-                elem_fn(c).map(|v| ((row as i32, col as i32).into(), v))
+                elem_fn(c).map(|v| ((col as i32, row as i32).into(), v))
             })
         }).collect()
     }

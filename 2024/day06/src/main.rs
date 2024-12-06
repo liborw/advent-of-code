@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}};
+use std::collections::HashSet;
 
 use utils::{aoc_task, map::{Direction, Map, Pos, SparseMap}, took};
 
@@ -24,7 +24,7 @@ impl Guard {
     }
 
     fn r#move(&mut self) {
-        self.pos = self.pos.r#move(&self.dir, 1);
+        self.pos = self.next_pos();
     }
 
     fn next_pos(&self) -> Pos {
@@ -32,24 +32,28 @@ impl Guard {
     }
 }
 
-type Path = HashSet<Guard>;
 
-
-fn walk(guard: &Guard, map: &SparseMap<char>) -> Path {
+fn walk(guard: &Guard, map: &SparseMap<char>) -> (HashSet<Guard>, bool) {
     let mut g = guard.clone();
-    let mut path = Path::new();
+    let mut visited = HashSet::new();
 
     while map.get(&g.pos).is_some() {
-        path.insert(g.clone());
+
+        if visited.contains(&g) {
+            return (visited, true)
+        }
+
+        visited.insert(g.clone());
 
         // turn if needed
         while map.get(&g.next_pos()) == Some(&'#') {
             g.turn()
         }
-        path.insert(g.clone());
+
+        visited.insert(g.clone());
         g.r#move();
     }
-    path
+    (visited, false)
 }
 
 fn get_guard(map: &SparseMap<char>) -> Guard {
@@ -62,39 +66,29 @@ fn get_guard(map: &SparseMap<char>) -> Guard {
 fn part1(input: &str) -> usize {
     let map = SparseMap::from_str(input, &|v| Some(v));
     let guard = get_guard(&map);
-    walk(&guard, &map).into_iter().map(|g| g.pos).collect::<HashSet<Pos>>().len()
-}
-
-fn is_cycle(guard: &Guard, map: &SparseMap<char>) -> bool {
-    let mut g = guard.clone();
-    let mut visited = HashSet::new();
-
-    while map.get(&g.pos).is_some() {
-
-        if visited.contains(&g) {
-            return true
-        }
-        visited.insert(g.clone());
-
-        // turn if needed
-        while map.get(&g.next_pos()) == Some(&'#') {
-            g.turn()
-        }
-        visited.insert(g.clone());
-        g.r#move();
-    }
-    false
+    walk(&guard, &map).0.into_iter()
+        .map(|g| g.pos)
+        .collect::<HashSet<_>>()
+        .len()
 }
 
 fn part2(input: &str) -> usize {
-    let map = SparseMap::from_str(input, &|v| Some(v));
+    let mut map = SparseMap::from_str(input, &|v| Some(v));
     let guard = get_guard(&map);
 
-    map.find_all(&|v| v == &'.').filter(|p| {
-        let mut map = map.clone();
-        map.insert(*p, '#');
-        is_cycle(&guard, &map)
-    }).count()
+    walk(&guard, &map).0.into_iter()
+        .map(|g| g.pos)
+        .collect::<HashSet<_>>()
+        .into_iter().filter(|p| {
+            if *p == guard.pos {
+                false
+            } else {
+                map.insert(*p, '#');
+                let is_loop = walk(&guard, &map).1;
+                map.insert(*p, '.');
+                is_loop
+            }
+        }).count()
 
 }
 
@@ -129,6 +123,6 @@ mod tests {
     #[test]
     fn part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 2118);
+        assert_eq!(part2(input), 2188);
     }
 }

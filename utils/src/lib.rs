@@ -3,7 +3,8 @@ pub mod grid;
 pub mod position;
 pub mod vector;
 pub mod direction;
-
+pub mod math;
+pub mod repeat;
 
 pub use took::took;
 

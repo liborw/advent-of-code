@@ -15,19 +15,20 @@ pub fn lcm<T: Num + Copy>(a: T, b: T) -> T {
 }
 
 
-pub fn digits<T>(mut num: T) -> impl Iterator<Item = u8>
+pub fn digits<T>(num: T) -> impl Iterator<Item = u8>
 where
     T: PrimInt + Unsigned,
 {
-    std::iter::from_fn(move || {
-        if num == T::zero() {
-            None
-        } else {
-            let digit = (num % T::from(10).unwrap()).to_u8().unwrap();
-            num = num / T::from(10).unwrap();
-            Some(digit)
-        }
-    })
+    let mut num = num;
+    let mut d: Vec<u8> = Vec::new();
+
+    while num > T::zero() {
+        let digit = (num % T::from(10).unwrap()).to_u8().unwrap();
+        num = num / T::from(10).unwrap();
+        d.push(digit)
+    }
+
+    d.into_iter().rev()
 }
 
 pub enum Op {
@@ -57,4 +58,20 @@ impl Op {
             Op::Con => panic!("Con not implemented"),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_digits() {
+        let mut d = digits(1234u32);
+        assert_eq!(d.next(), Some(1));
+        assert_eq!(d.next(), Some(2));
+        assert_eq!(d.next(), Some(3));
+        assert_eq!(d.next(), Some(4));
+        assert_eq!(d.next(), None);
+    }
+
 }

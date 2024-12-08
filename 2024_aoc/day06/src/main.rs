@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
-use utils::{aoc_task, direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
+use utils::{run_task, direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
 
 fn main() {
     let input = include_str!("../input.txt");
-    aoc_task!(|| part1(input));
-    aoc_task!(|| part2(input));
+    run_task!(|| part1(input));
+    run_task!(|| part2(input));
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]

@@ -1,12 +1,12 @@
-use utils::{took, aoc_task};
+use utils::{took, run_task};
 use regex::Regex;
 
 
 
 fn main() {
     let input = include_str!("../input.txt");
-    aoc_task!(|| part1(input));
-    aoc_task!(|| part2(input));
+    run_task!(|| part1(input));
+    run_task!(|| part2(input));
 }
 
 fn part1(input: &str) -> i32 {

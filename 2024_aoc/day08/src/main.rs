@@ -2,14 +2,14 @@
 use std::collections::{hash_map::Entry, HashMap};
 
 use itertools::Itertools;
-use utils::{aoc_task, map::{Map, SparseMap}, took, vector::Vec2};
+use utils::{run_task, map::{Map, SparseMap}, took, vector::Vec2};
 
 
 
 fn main() {
     let input = include_str!("../input.txt");
-    aoc_task!(|| part1(input));
-    aoc_task!(|| part2(input));
+    run_task!(|| part1(input));
+    run_task!(|| part2(input));
 }
 
 fn parse(input: &str) -> SparseMap<char> {

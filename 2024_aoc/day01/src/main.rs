@@ -1,10 +1,10 @@
-use utils::{aoc_task, took};
+use utils::{run_task, took};
 use itertools::Itertools;
 
 fn main() {
     let input = include_str!("../input.txt");
-    aoc_task!(|| part1(input));
-    aoc_task!(|| part2(input));
+    run_task!(|| part1(input));
+    run_task!(|| part2(input));
 }
 
 fn parse(input: &str) -> (Vec<u32>, Vec<u32>) {

@@ -1,14 +1,14 @@
 use std::cmp::Ordering;
 
 use itertools::Itertools;
-use utils::{took, aoc_task};
+use utils::{took, run_task};
 
 
 
 fn main() {
     let input = include_str!("../input.txt");
-    aoc_task!(|| part1(input));
-    aoc_task!(|| part2(input));
+    run_task!(|| part1(input));
+    run_task!(|| part2(input));
 }
 
 type Rules = Vec<(i32, i32)>;

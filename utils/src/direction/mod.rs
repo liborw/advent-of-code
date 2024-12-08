@@ -2,6 +2,8 @@ use num::{Num, Signed};
 use crate::vector::Vec2;
 
 pub mod cardinal;
+pub mod ordinal;
+
 
 
 pub trait AdvanceInDirection<T>
@@ -26,6 +28,28 @@ impl<T: Num + Copy> AdvanceInDirection<&cardinal::Direction> for Vec2<T> {
             Down  => Vec2::new( self.x, self.y + steps),
             Left  => Vec2::new( self.x - steps, self.y),
             Right => Vec2::new( self.x + steps, self.y),
+        }
+    }
+}
+
+impl<T: Num + Copy> AdvanceInDirection<&ordinal::Direction> for Vec2<T> {
+    type Unit = T;
+
+    fn advance(&self, dir: &ordinal::Direction) -> Self {
+        self.advance_n(dir, T::one())
+    }
+
+    fn advance_n(&self, dir: &ordinal::Direction, steps: Self::Unit) -> Self {
+        use ordinal::Direction::*;
+        match dir {
+            North => Vec2::new( self.x, self.y - steps),
+            South => Vec2::new( self.x, self.y + steps),
+            West => Vec2::new( self.x - steps, self.y),
+            East => Vec2::new( self.x + steps, self.y),
+            NorthWest => Vec2::new( self.x - steps, self.y - steps),
+            NorthEast => Vec2::new( self.x + steps, self.y - steps),
+            SouthWest => Vec2::new( self.x - steps, self.y + steps),
+            SouthEast => Vec2::new( self.x + steps, self.y + steps),
         }
     }
 }

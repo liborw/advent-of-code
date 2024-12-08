@@ -1,9 +1,10 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::vector::{Rect, Vec2};
+use crate::vector::{self, Rect};
 
 
-pub type SparseMap<T> = HashMap<Vec2<isize>, T>;
+pub type Vec2 = vector::Vec2<isize>;
+pub type SparseMap<T> = HashMap<Vec2, T>;
 
 pub trait Map<T> {
     fn copy_map(&self, elem_f: impl Fn(&T) -> Option<T>) -> Self;
@@ -11,7 +12,7 @@ pub trait Map<T> {
     fn print(&self, bg: T);
     fn print_with_bounds(&self, bg: T, bounds: &Rect<isize>);
     fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
-    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2<isize>>;
+    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2>;
 }
 
 
@@ -28,7 +29,7 @@ impl<T: Display> Map<T> for SparseMap<T> {
         map
     }
 
-    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2<isize>> {
+    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2> {
         self.iter().filter_map(|(&k, v)| predicate(v).then_some(k))
     }
 

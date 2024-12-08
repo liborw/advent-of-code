@@ -1,6 +1,5 @@
-use std::{char, collections::HashMap};
 
-use utils::{aoc_task, map::{Direction, Map, Pos, SparseMap}, took};
+use utils::{aoc_task, direction::{ordinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
 
 
 fn main() {
@@ -14,21 +13,21 @@ fn part1(input: &str) -> usize {
 
     map.find_all(&|&v| v == 'X')
       .flat_map(|p| {
-        Direction::all().into_iter().map(|d| {
-                (0..4).map(|i| map.get(&(p.r#move(&d, i))).unwrap_or(&'-')).collect()
+        Direction::ALL.into_iter().map(|d| {
+                (0..4).map(|i| map.get(&(p.advance_n(&d, i))).unwrap_or(&'-')).collect()
             }).collect::<Vec<String>>()
         })
-     .filter(|v| v == "XMAS")
+     .filter(|v| dbg!(v) == "XMAS")
      .count()
 
 }
 
-fn is_x_mas(p: &Pos, map: &HashMap<Pos, char>) -> bool {
+fn is_x_mas(p: &Vec2, map: &SparseMap<char>) -> bool {
 
-    let tl = map.get(&(*p + Pos::new(-1, 1))).unwrap_or(&'-');
-    let tr = map.get(&(*p + Pos::new(1, 1))).unwrap_or(&'-');
-    let bl = map.get(&(*p + Pos::new(-1, -1))).unwrap_or(&'-');
-    let br = map.get(&(*p + Pos::new(1, -1))).unwrap_or(&'-');
+    let tl = map.get(&(*p + Vec2::new(-1, 1))).unwrap_or(&'-');
+    let tr = map.get(&(*p + Vec2::new(1, 1))).unwrap_or(&'-');
+    let bl = map.get(&(*p + Vec2::new(-1, -1))).unwrap_or(&'-');
+    let br = map.get(&(*p + Vec2::new(1, -1))).unwrap_or(&'-');
 
     ((*tl, *br) == ('M', 'S') || (*tl, *br) == ('S', 'M')) && ((*tr, *bl) == ('M', 'S') || (*tr, *bl) == ('S', 'M'))
 }
@@ -37,7 +36,7 @@ fn part2(input: &str) -> usize {
     let map = SparseMap::from_str(input, &|c| Some(c));
 
     // find all X
-    let xs: Vec<Pos> = map.iter()
+    let xs: Vec<_> = map.iter()
         .filter_map(|(&k, &v)| {
             if v == 'A' {
                 Some(k)

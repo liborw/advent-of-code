@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use utils::{aoc_task, map::{Direction, Map, Pos, SparseMap}, took};
+use utils::{aoc_task, direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -10,25 +10,25 @@ fn main() {
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Guard {
-    pos: Pos,
+    pos: Vec2,
     dir: Direction
 }
 
 impl Guard {
-    fn new(pos: Pos, dir: Direction) -> Self {
+    fn new(pos: Vec2, dir: Direction) -> Self {
         Guard{pos, dir}
     }
 
     fn turn(&mut self) {
-        self.dir = self.dir.turn_right_90();
+        self.dir = self.dir.turn_right();
     }
 
     fn r#move(&mut self) {
         self.pos = self.next_pos();
     }
 
-    fn next_pos(&self) -> Pos {
-        self.pos.r#move(&self.dir, 1)
+    fn next_pos(&self) -> Vec2 {
+        self.pos.advance(&self.dir)
     }
 }
 

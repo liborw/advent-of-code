@@ -38,19 +38,21 @@ fn walk(guard: &Guard, map: &SparseMap<char>) -> (HashSet<Guard>, bool) {
     let mut visited = HashSet::new();
 
     while map.get(&g.pos).is_some() {
+        if map.get(&g.next_pos()) == Some(&'#') {
 
-        if visited.contains(&g) {
-            return (visited, true)
+            if visited.contains(&g) {
+                return (visited, true)
+            }
+
+            visited.insert(g.clone());
+
+            // turn if needed
+            while map.get(&g.next_pos()) == Some(&'#') {
+                g.turn()
+            }
         }
-
         visited.insert(g.clone());
 
-        // turn if needed
-        while map.get(&g.next_pos()) == Some(&'#') {
-            g.turn()
-        }
-
-        visited.insert(g.clone());
         g.r#move();
     }
     (visited, false)

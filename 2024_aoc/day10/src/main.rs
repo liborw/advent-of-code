@@ -1,6 +1,4 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, hash::Hash};
-
-use pathfinding::{matrix::Matrix, prelude::bfs_reach};
+use std::{collections::{HashSet, VecDeque}, hash::Hash};
 use utils::{direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, run_task, took};
 
 fn main() {
@@ -24,8 +22,7 @@ where
     visited.insert(start);
     queue.push_back(start);
 
-    while !queue.is_empty() {
-        let n = queue.pop_front().unwrap();
+    while let Some(n) = queue.pop_front() {
 
         if predicate(&n) {
             cnt += 1;
@@ -48,20 +45,19 @@ where
     IN: IntoIterator<Item = N>,
     G: Fn(&N) -> bool,
 {
-    let mut queue = VecDeque::new();
+    let mut stack = Vec::new();
     let mut cnt = 0;
 
-    queue.push_front(start);
+    stack.push(start);
 
-    while !queue.is_empty() {
-        let n = queue.pop_front().unwrap();
+    while let Some(n) = stack.pop() {
 
         if predicate(&n) {
             cnt += 1;
         }
 
         for next in expand(&n).into_iter() {
-            queue.push_front(next);
+            stack.push(next);
         }
     }
     cnt

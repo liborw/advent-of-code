@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use rustc_hash::FxHashMap as HashMap;
 use utils::{math::digits, run_task, took};
 
 fn main() {
@@ -55,13 +54,13 @@ fn blink(stone: usize, n: usize, cache: &mut HashMap<(usize, usize), usize>) -> 
 
 fn part1(input: &str) -> usize {
     let stones = parse(input);
-    let mut cache = HashMap::new();
+    let mut cache = HashMap::default();
     stones.into_iter().map(|s| blink(s, 25, &mut cache)).sum()
 }
 
 fn part2(input: &str) -> usize {
     let stones = parse(input);
-    let mut cache = HashMap::new();
+    let mut cache = HashMap::default();
     stones.into_iter().map(|s| blink(s, 75, &mut cache)).sum()
 }
 
@@ -78,8 +77,8 @@ mod tests {
 
     #[test]
     fn day11_blink_test() {
-        assert_eq!(blink(0, 2, &mut HashMap::new()), 1);
-        assert_eq!(blink(2222, 2, &mut HashMap::new()), 4);
+        assert_eq!(blink(0, 2, &mut HashMap::default()), 1);
+        assert_eq!(blink(2222, 2, &mut HashMap::default()), 4);
     }
 
     #[test]

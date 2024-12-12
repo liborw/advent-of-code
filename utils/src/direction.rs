@@ -61,6 +61,20 @@ impl Direction {
             NorthWest   => NorthEast,
         }
     }
+
+    pub fn oposite(&self) -> Self {
+        use Direction::*;
+        match *self {
+            North       => South,
+            NorthEast   => SouthWest,
+            East        => West,
+            SouthEast   => NorthWest,
+            South       => North,
+            SouthWest   => NorthEast,
+            West        => East,
+            NorthWest   => SouthEast,
+        }
+    }
 }
 
 impl<T: Num + Copy> From<&Direction> for Vec2<T> {

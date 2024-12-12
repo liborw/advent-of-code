@@ -1,4 +1,4 @@
-use num::Num;
+use num::{Float, Num};
 use std::{fmt::{Debug, Display, Formatter}, ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Rem, RemAssign, Sub, SubAssign}};
 
 
@@ -31,6 +31,13 @@ impl<T> Vec2<T> {
     {
         self.advance_n(v, T::one())
     }
+
+    pub fn manhatan(&self) -> T
+    where T: Num + Copy
+    {
+        self.x + self.y
+    }
+
 }
 
 

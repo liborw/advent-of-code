@@ -130,6 +130,6 @@ mod tests {
     #[test]
     fn day12_part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
+        assert_eq!(part2(input), 877492);
     }
 }

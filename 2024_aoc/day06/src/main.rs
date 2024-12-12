@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use utils::{run_task, direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
+use utils::{run_task, direction::Direction, map::{Map, SparseMap, Vec2}, took};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -20,7 +20,7 @@ impl Guard {
     }
 
     fn turn(&mut self) {
-        self.dir = self.dir.turn_right();
+        self.dir = self.dir.turn_90_right();
     }
 
     fn r#move(&mut self) {

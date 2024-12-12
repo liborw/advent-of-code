@@ -1,6 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 
-use utils::{direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap}, run_task, took, vector::Vec2};
+use utils::{direction::Direction , map::{Map, SparseMap}, run_task, took, vector::Vec2};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -20,7 +20,7 @@ fn expand_plot(pos: Vec2<isize>, map: &SparseMap<char>) -> (HashSet<Vec2<isize>>
     queue.push_back(pos);
 
     while let Some(n) = queue.pop_front() {
-        Direction::ALL
+        Direction::DIRECTION_4
             .into_iter()
             .for_each(|d| {
                 let next = n.advance(&d);
@@ -80,14 +80,14 @@ fn part2(input: &str) -> usize {
             let d = *d;
             fences.remove(&(p, d));
 
-            let dd = d.turn_left();
+            let dd = d.turn_90_left();
             let mut pp = p.advance(&dd);
             while fences.contains(&(pp, d)) {
                 fences.remove(&(pp, d));
                 pp = pp.advance(&dd);
             };
 
-            let dd = d.turn_right();
+            let dd = d.turn_90_right();
             let mut pp = p.advance(&dd);
             while fences.contains(&(pp, d)) {
                 fences.remove(&(pp, d));

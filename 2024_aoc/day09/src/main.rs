@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::{Debug, Display}};
+use std::{collections::VecDeque, fmt::Debug};
 
 use utils::{took, run_task};
 

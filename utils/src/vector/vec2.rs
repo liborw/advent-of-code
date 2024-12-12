@@ -1,6 +1,7 @@
 use num::Num;
 use std::{fmt::{Debug, Display, Formatter}, ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Rem, RemAssign, Sub, SubAssign}};
 
+
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub struct Vec2<T> {
     pub x: T,
@@ -18,7 +19,20 @@ impl<T> Vec2<T> {
     {
         Self{x: T::zero(), y: T::zero()}
     }
+
+    pub fn advance_n(&self, v: impl Into<Vec2<T>>, n: T) -> Self
+    where T: Num + Copy
+    {
+        *self + v.into() * n
+    }
+
+    pub fn advance(&self, v: impl Into<Vec2<T>>) -> Self
+    where T: Num + Copy
+    {
+        self.advance_n(v, T::one())
+    }
 }
+
 
 impl<T: Display> Display for Vec2<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -91,7 +105,7 @@ impl<T: Num + Copy> Neg for Vec2<T> {
     }
 }
 
-impl<T: Num + Copy + Send + Sync> Mul<T> for Vec2<T> {
+impl<T: Num + Copy> Mul<T> for Vec2<T> {
     type Output = Self;
 
     fn mul(self, rhs: T) -> Self::Output {

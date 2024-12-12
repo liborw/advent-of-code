@@ -1,5 +1,5 @@
 
-use utils::{run_task, direction::{ordinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, took};
+use utils::{run_task, direction::Direction, map::{Map, SparseMap, Vec2}, took};
 
 
 fn main() {
@@ -13,11 +13,11 @@ fn part1(input: &str) -> usize {
 
     map.find_all(&|&v| v == 'X')
       .flat_map(|p| {
-        Direction::ALL.into_iter().map(|d| {
+        Direction::DIRECTION_8.into_iter().map(|d| {
                 (0..4).map(|i| map.get(&(p.advance_n(&d, i))).unwrap_or(&'-')).collect()
             }).collect::<Vec<String>>()
         })
-     .filter(|v| dbg!(v) == "XMAS")
+     .filter(|v| v == "XMAS")
      .count()
 
 }

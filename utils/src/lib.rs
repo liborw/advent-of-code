@@ -1,6 +1,5 @@
 pub mod map;
 pub mod grid;
-pub mod position;
 pub mod vector;
 pub mod direction;
 pub mod math;

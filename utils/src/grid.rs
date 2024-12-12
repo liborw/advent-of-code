@@ -1,8 +1,8 @@
 use std::{fmt, ops::{Index, IndexMut}, str::FromStr};
 
-use crate::position::Position;
+use crate::vector::Vec2;
 
-pub type Pos = Position<isize>;
+pub type Pos = Vec2<isize>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Grid<T> {
@@ -17,15 +17,15 @@ impl<T> Grid<T> {
     }
 
     pub fn get(&self, p: &Pos) -> Option<&T> {
-        if (p.row as usize) < self.height && (p.col as usize) < self.width {
-            Some(&self[(p.row as usize, p.col as usize)])
+        if (p.y as usize) < self.height && (p.x as usize) < self.width {
+            Some(&self[(p.y as usize, p.x as usize)])
         } else {
             None
         }
     }
 
     pub fn insert(&mut self, p: &Pos, v: T) {
-        self[(p.row as usize, p.col as usize)] = v
+        self[(p.y as usize, p.x as usize)] = v
     }
 
     pub fn find<'a>(&'a self, predicate: impl Fn(&T) -> bool + 'a) -> impl Iterator<Item=Pos> + 'a {
@@ -34,7 +34,7 @@ impl<T> Grid<T> {
             .enumerate()
             .flat_map(move |(i, val)| {
                 if predicate(val) {
-                    Some(Pos{row: (i / self.width) as isize, col: (i % self.width) as isize})
+                    Some(Pos{y: (i / self.width) as isize, x: (i % self.width) as isize})
                 } else {
                     None
                 }
@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn find_test() {
         let g = Grid::from_str(TEST_STR).unwrap();
-        assert_eq!(g.find(|x| x == &'2').collect::<Vec<_>>(), vec![Pos{row: 0, col:1}] );
+        assert_eq!(g.find(|x| x == &'2').collect::<Vec<_>>(), vec![Pos{y: 0, x:1}] );
     }
 
 }

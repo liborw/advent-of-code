@@ -1,5 +1,5 @@
 use std::{collections::{HashSet, VecDeque}, hash::Hash};
-use utils::{direction::{cardinal::Direction, AdvanceInDirection}, map::{Map, SparseMap, Vec2}, run_task, took};
+use utils::{direction::Direction, map::{Map, SparseMap, Vec2}, run_task, took};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -71,7 +71,7 @@ fn parse(input: &str) -> SparseMap<u8> {
 fn expand(p: &Vec2, map: &SparseMap<u8>) -> Vec<Vec2> {
     let cur = map.get(p).unwrap();
 
-    Direction::ALL.into_iter().filter_map(|d| {
+    Direction::DIRECTION_4.into_iter().filter_map(|d| {
         let next = p.advance(&d);
         map.get(&next).is_some_and(|v| *v == *cur + 1).then_some(next)
     }).collect()

@@ -38,6 +38,12 @@ impl<T> Vec2<T> {
         self.x + self.y
     }
 
+    pub fn is_zero(&self) -> bool
+    where T: Num + Copy
+    {
+        self.x.is_zero() && self.y.is_zero()
+    }
+
 }
 
 

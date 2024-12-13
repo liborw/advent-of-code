@@ -1,6 +1,3 @@
-use std::collections::VecDeque;
-
-use microlp::{ComparisonOp, OptimizationDirection, Problem};
 use regex::Regex;
 use utils::{run_task, took, vector::Vec2};
 
@@ -21,32 +18,9 @@ struct Machine {
 
 impl Machine {
 
-    // too slow
-    fn play(&self) -> Option<usize> {
-        let mut min_cost = None;
-        let mut queue = VecDeque::new();
-        queue.push_back((Vec2::zero(), 0));
-
-
-        while let Some((v, c)) = queue.pop_front() {
-
-            if c > min_cost.unwrap_or(usize::MAX) || v.x > self.prize.x || v.y > self.prize.y {
-                continue;
-            }
-
-            if v == self.prize {
-                min_cost = Some(c);
-                continue;
-            }
-
-            queue.push_back((v + self.button_a, c + 3));
-            queue.push_back((v + self.button_b, c + 1));
-        };
-        min_cost
-    }
-
+    #[allow(dead_code)]
     fn solve(&self) -> Option<usize> {
-        let nb = (self.prize.x / self.button_b.x).min(self.prize.y / self.button_b.y);
+        let nb = usize::min(self.prize.x / self.button_b.x, self.prize.y / self.button_b.y);
 
         for i in 0..nb {
             let rem = self.prize - self.button_b * (nb - i);
@@ -55,9 +29,8 @@ impl Machine {
                 return Some(nb - i);
             }
 
-            let na = (rem.x / self.button_a.x).min(rem.y / self.button_a.y);
+            let na = rem.x / self.button_a.x;
             let rem = rem - self.button_a * na;
-
 
             if rem.is_zero() {
                 println!("found: a: {na} b:{} c: {}", nb - i, nb - i + na * 3);
@@ -67,21 +40,37 @@ impl Machine {
         None
     }
 
-    fn solve_lp(&self) -> Option<usize> {
-        let mut problem = Problem::new(OptimizationDirection::Minimize);
-        let a = problem.add_integer_var(3.0, (0, i32::MAX));
-        let b = problem.add_integer_var(1.0, (0, i32::MAX));
+    fn solve_tictac(&self) -> Option<usize> {
+        let mut rem = self.prize;
+        let mut last_est: Option<(usize, usize)> = None;
+        let mut a_est = 1;
+        let mut b_est = 1;
 
-        problem.add_constraint([(a, self.button_a.x as f64), (b, self.button_b.x as f64)], ComparisonOp::Eq, self.prize.x as f64);
-        problem.add_constraint([(a, self.button_a.y as f64), (b, self.button_b.y as f64)], ComparisonOp::Eq, self.prize.y as f64);
+        while !last_est.is_some_and(|(a, b)| a == a_est && b == b_est) {
 
-        problem.solve().map(|s| {
-            let a_val = s.var_value_rounded(a) as usize;
-            let b_val = s.var_value_rounded(b) as usize;
-            let cost = a_val * 3 + b_val;
-            println!("{self:?} a: {} ({a_val}), b: {} ({b_val}), obj: {} ({cost})", s.var_value(a), s.var_value(b), s.objective() );
-            cost
-        }).ok()
+            let r = self.prize - self.button_a * a_est - self.button_b * b_est;
+            if r.x == 0 && r.y == 0 {
+                return Some(a_est * 3 + b_est);
+            }
+
+            // This is a hack
+            let r = self.prize - self.button_a * (a_est + 1) - self.button_b * (b_est - 1);
+            if r.x == 0 && r.y == 0 {
+                return Some((a_est + 1) * 3 + (b_est - 1));
+            }
+
+            last_est = Some((a_est, b_est));
+
+            b_est = usize::min(rem.x / self.button_b.x, rem.y / self.button_b.y);
+            rem = self.prize - self.button_b * b_est;
+            a_est = usize::max(rem.x / self.button_a.x, rem.y / self.button_a.y);
+            rem = self.prize - self.button_a * a_est;
+            b_est = usize::min(rem.x / self.button_b.x, rem.y / self.button_b.y);
+
+            println!("a_est: {} b_est: {} rem: {}", a_est, b_est, self.prize - self.button_a * a_est - self.button_b * b_est);
+        }
+
+        None
     }
 }
 
@@ -105,7 +94,7 @@ fn parse(input: &str) -> Vec<Machine> {
 // 1h
 fn part1(input: &str) -> usize {
     let machines = parse(input);
-    machines.into_iter().filter_map(|m| m.solve_lp()).sum()
+    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
 }
 
 fn part2(input: &str) -> usize {
@@ -114,7 +103,7 @@ fn part2(input: &str) -> usize {
         m.prize.x += 10000000000000;
         m.prize.y += 10000000000000;
     }
-    machines.into_iter().filter_map(|m| m.solve_lp()).sum()
+    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
 }
 
 #[cfg(test)]
@@ -127,21 +116,22 @@ mod tests {
         assert_eq!(part1(input), 480);
     }
 
-    #[test]
-    fn day13_part1_final_test() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part1(input), 29438);
-    }
+   #[test]
+   fn day13_part1_final_test() {
+       let input = include_str!("../input.txt");
+       assert_eq!(part1(input), 29438);
+   }
 
-    #[test]
-    fn day13_part2_test() {
-        let input = include_str!("../input_test.txt");
-        assert_eq!(part2(input), 1);
-    }
+   #[test]
+   fn day13_part2_test() {
+       let input = include_str!("../input_test.txt");
+       assert_eq!(part2(input), 875318608908);
+   }
 
-    #[test]
-    fn day13_part2_final_test() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
-    }
+   #[test]
+   fn day13_part2_final_test() {
+       let input = include_str!("../input.txt");
+       assert_eq!(part2(input), 104958599303720);
+
+   }
 }

@@ -1,5 +1,6 @@
-use std::{collections::VecDeque, usize};
+use std::collections::VecDeque;
 
+use microlp::{ComparisonOp, OptimizationDirection, Problem};
 use regex::Regex;
 use utils::{run_task, took, vector::Vec2};
 
@@ -15,6 +16,7 @@ struct Machine {
     button_b: Vec2<usize>,
     prize: Vec2<usize>
 }
+
 
 
 impl Machine {
@@ -65,6 +67,22 @@ impl Machine {
         None
     }
 
+    fn solve_lp(&self) -> Option<usize> {
+        let mut problem = Problem::new(OptimizationDirection::Minimize);
+        let a = problem.add_integer_var(3.0, (0, i32::MAX));
+        let b = problem.add_integer_var(1.0, (0, i32::MAX));
+
+        problem.add_constraint([(a, self.button_a.x as f64), (b, self.button_b.x as f64)], ComparisonOp::Eq, self.prize.x as f64);
+        problem.add_constraint([(a, self.button_a.y as f64), (b, self.button_b.y as f64)], ComparisonOp::Eq, self.prize.y as f64);
+
+        problem.solve().map(|s| {
+            let a_val = s.var_value_rounded(a) as usize;
+            let b_val = s.var_value_rounded(b) as usize;
+            let cost = a_val * 3 + b_val;
+            println!("{self:?} a: {} ({a_val}), b: {} ({b_val}), obj: {} ({cost})", s.var_value(a), s.var_value(b), s.objective() );
+            cost
+        }).ok()
+    }
 }
 
 
@@ -73,8 +91,8 @@ fn parse(input: &str) -> Vec<Machine> {
 
     re.captures_iter(input)
         .map(|c| c.extract::<6>().1.into_iter()
-                                                    .map(|v| v.parse::<usize>().unwrap())
-                                                    .collect::<Vec<_>>())
+            .map(|v| v.parse::<usize>().unwrap())
+            .collect::<Vec<_>>())
         .map(|v| {
         Machine{
                 button_a: Vec2::new(v[0], v[1]),
@@ -84,9 +102,10 @@ fn parse(input: &str) -> Vec<Machine> {
         }).collect()
 }
 
+// 1h
 fn part1(input: &str) -> usize {
     let machines = parse(input);
-    machines.into_iter().filter_map(|m| m.solve()).sum()
+    machines.into_iter().filter_map(|m| m.solve_lp()).sum()
 }
 
 fn part2(input: &str) -> usize {
@@ -95,7 +114,7 @@ fn part2(input: &str) -> usize {
         m.prize.x += 10000000000000;
         m.prize.y += 10000000000000;
     }
-    machines.into_iter().filter_map(|m| m.solve()).sum()
+    machines.into_iter().filter_map(|m| m.solve_lp()).sum()
 }
 
 #[cfg(test)]

@@ -40,6 +40,7 @@ impl Machine {
         None
     }
 
+    #[allow(dead_code)]
     fn solve_tictac(&self) -> Option<usize> {
         let mut rem = self.prize;
         let mut last_est: Option<(usize, usize)> = None;
@@ -66,12 +67,32 @@ impl Machine {
             a_est = usize::max(rem.x / self.button_a.x, rem.y / self.button_a.y);
             rem = self.prize - self.button_a * a_est;
             b_est = usize::min(rem.x / self.button_b.x, rem.y / self.button_b.y);
-
-            println!("a_est: {} b_est: {} rem: {}", a_est, b_est, self.prize - self.button_a * a_est - self.button_b * b_est);
         }
-
         None
     }
+
+    fn solve_linalg(&self) -> Option<usize> {
+
+        let ax = self.button_a.x as f64;
+        let ay = self.button_a.y as f64;
+        let bx = self.button_b.x as f64;
+        let by = self.button_b.y as f64;
+        let px = self.prize.x as f64;
+        let py = self.prize.y as f64;
+
+        let det = ax*by - ay*bx;
+        assert_ne!(det as usize, 0);
+
+        let m = ((ax*py - ay*px) / det) as usize;
+        let n = ((py - m as f64 * by) / ay) as usize;
+
+        if (self.prize - self.button_a * n - self.button_b * m).is_zero() {
+            Some(n*3 + m)
+        } else {
+            None
+        }
+    }
+
 }
 
 
@@ -94,7 +115,7 @@ fn parse(input: &str) -> Vec<Machine> {
 // 1h
 fn part1(input: &str) -> usize {
     let machines = parse(input);
-    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
+    machines.into_iter().filter_map(|m| m.solve_linalg()).sum()
 }
 
 fn part2(input: &str) -> usize {
@@ -103,18 +124,18 @@ fn part2(input: &str) -> usize {
         m.prize.x += 10000000000000;
         m.prize.y += 10000000000000;
     }
-    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
+    machines.into_iter().filter_map(|m| m.solve_linalg()).sum()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn day13_part1_test() {
-        let input = include_str!("../input_test.txt");
-        assert_eq!(part1(input), 480);
-    }
+   #[test]
+   fn day13_part1_test() {
+       let input = include_str!("../input_test.txt");
+       assert_eq!(part1(input), 480);
+   }
 
    #[test]
    fn day13_part1_final_test() {

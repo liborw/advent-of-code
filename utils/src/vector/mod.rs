@@ -11,8 +11,8 @@ pub struct Rect<T> {
 
 impl<T: Num + Copy> Rect<T> {
 
-    pub fn new(min: Vec2<T>, max: Vec2<T>) -> Self {
-        Self{min, max}
+    pub fn new(min: impl Into<Vec2<T>>, max: impl Into<Vec2<T>>) -> Self {
+        Self{min: min.into(), max: max.into()}
     }
 
     pub fn zero() -> Self {
@@ -26,7 +26,7 @@ impl<T: Num + Copy> Rect<T> {
     pub fn is_inside(&self, vec: Vec2<T>) -> bool
     where T: PartialOrd
     {
-        self.min < vec && vec < self.max
+        self.min.x <= vec.x && vec.x < self.max.x && self.min.y <= vec.y && vec.y < self.max.y
     }
 }
 

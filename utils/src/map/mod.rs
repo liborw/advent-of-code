@@ -9,8 +9,8 @@ pub type SparseMap<T> = HashMap<Vec2, T>;
 pub trait Map<T> {
     fn copy_map(&self, elem_f: impl Fn(&T) -> Option<T>) -> Self;
     fn bounds(&self) -> Rect<isize>;
-    fn print(&self, bg: T);
-    fn print_with_bounds(&self, bg: T, bounds: &Rect<isize>);
+    fn print(&self, bg: char);
+    fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>);
     fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
     fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2>;
 }
@@ -46,16 +46,20 @@ impl<T: Display> Map<T> for SparseMap<T> {
         b
     }
 
-    fn print(&self, bg: T) {
+    fn print(&self, bg: char) {
         let b = self.bounds();
         self.print_with_bounds(bg, &b);
     }
 
-    fn print_with_bounds(&self, bg: T, bounds: &Rect<isize>) {
+    fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>) {
 
-        for r in bounds.min.x..=bounds.max.x  {
-            for c in bounds.min.y..=bounds.max.y {
-                print!("{}", self.get(&Vec2::new(c, r)).unwrap_or(&bg));
+        for r in bounds.min.y..bounds.max.y  {
+            for c in bounds.min.x..bounds.max.x {
+                if let Some(v) = self.get(&(c, r).into()) {
+                    print!("{}", v);
+                } else {
+                    print!("{bg}");
+                }
             }
             println!();
         }

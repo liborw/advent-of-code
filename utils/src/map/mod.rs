@@ -12,11 +12,11 @@ pub trait Map<T> {
     fn print(&self, bg: char);
     fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>);
     fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
-    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2>;
+    fn find_all(&self, predicate: impl Fn(T) -> bool) -> impl Iterator<Item=Vec2>;
 }
 
 
-impl<T: Display> Map<T> for SparseMap<T> {
+impl<T: Display + Copy> Map<T> for SparseMap<T> {
     fn copy_map(&self, elem_f: impl Fn(&T) -> Option<T>) -> Self {
         let mut map = SparseMap::new();
 
@@ -29,8 +29,9 @@ impl<T: Display> Map<T> for SparseMap<T> {
         map
     }
 
-    fn find_all(&self, predicate: &dyn Fn(&T) -> bool) -> impl Iterator<Item=Vec2> {
-        self.iter().filter_map(|(&k, v)| predicate(v).then_some(k))
+    fn find_all(&self, predicate: impl Fn(T) -> bool) -> impl Iterator<Item=Vec2> {
+
+        self.iter().filter_map(move |(&k, v)| predicate(*v).then_some(k))
     }
 
     fn bounds(&self) -> Rect<isize> {
@@ -53,8 +54,8 @@ impl<T: Display> Map<T> for SparseMap<T> {
 
     fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>) {
 
-        for r in bounds.min.y..bounds.max.y  {
-            for c in bounds.min.x..bounds.max.x {
+        for r in bounds.min.y..=bounds.max.y  {
+            for c in bounds.min.x..=bounds.max.x {
                 if let Some(v) = self.get(&(c, r).into()) {
                     print!("{}", v);
                 } else {

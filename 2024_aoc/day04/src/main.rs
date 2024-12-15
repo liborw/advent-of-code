@@ -11,7 +11,7 @@ fn main() {
 fn part1(input: &str) -> usize {
     let map = SparseMap::from_str(input, &|c| Some(c));
 
-    map.find_all(&|&v| v == 'X')
+    map.find_all(|v| v == 'X')
       .flat_map(|p| {
         Direction::DIRECTION_8.into_iter().map(|d| {
                 (0..4).map(|i| map.get(&(p.advance_n(&d, i))).unwrap_or(&'-')).collect()

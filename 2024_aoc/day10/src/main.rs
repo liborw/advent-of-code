@@ -79,7 +79,7 @@ fn expand(p: &Vec2, map: &SparseMap<u8>) -> Vec<Vec2> {
 
 fn part1(input: &str) -> usize {
     let map = parse(input);
-    let starts = map.find_all(&|d| d == &0);
+    let starts = map.find_all(|d| d == 0);
 
     starts.into_iter().map(|s| {
         bfs_cnt(s, |p| expand(p, &map), |v| map.get(v).is_some_and(|d| d == &9))
@@ -89,7 +89,7 @@ fn part1(input: &str) -> usize {
 
 fn part2(input: &str) -> usize {
     let map = parse(input);
-    let starts = map.find_all(&|d| d == &0);
+    let starts = map.find_all(|d| d == 0);
 
     starts.into_iter().map(|s| {
         dfs_cnt(s, |p| expand(p, &map), |v| map.get(v).is_some_and(|d| d == &9))

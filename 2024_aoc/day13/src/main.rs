@@ -71,6 +71,7 @@ impl Machine {
         None
     }
 
+    #[allow(dead_code)]
     fn solve_linalg(&self) -> Option<usize> {
 
         let ax = self.button_a.x as f64;
@@ -80,7 +81,7 @@ impl Machine {
         let px = self.prize.x as f64;
         let py = self.prize.y as f64;
 
-        let det = ax*by - ay*bx;
+        let det = dbg!(ax*by - ay*bx);
         assert_ne!(det as usize, 0);
 
         let m = ((ax*py - ay*px) / det) as usize;
@@ -115,7 +116,7 @@ fn parse(input: &str) -> Vec<Machine> {
 // 1h
 fn part1(input: &str) -> usize {
     let machines = parse(input);
-    machines.into_iter().filter_map(|m| m.solve_linalg()).sum()
+    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
 }
 
 fn part2(input: &str) -> usize {
@@ -124,7 +125,7 @@ fn part2(input: &str) -> usize {
         m.prize.x += 10000000000000;
         m.prize.y += 10000000000000;
     }
-    machines.into_iter().filter_map(|m| m.solve_linalg()).sum()
+    machines.into_iter().filter_map(|m| m.solve_tictac()).sum()
 }
 
 #[cfg(test)]

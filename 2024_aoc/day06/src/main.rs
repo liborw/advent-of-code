@@ -59,7 +59,7 @@ fn walk(guard: &Guard, map: &SparseMap<char>) -> (HashSet<Guard>, bool) {
 }
 
 fn get_guard(map: &SparseMap<char>) -> Guard {
-    let pos = map.find_all(&|c| "<>^v".chars().any(|v| v == *c)).next().unwrap();
+    let pos = map.find_all(|c| "<>^v".chars().any(|v| v == c)).next().unwrap();
     let dir = map.get(&pos).unwrap().try_into().unwrap();
     Guard::new(pos, dir)
 }

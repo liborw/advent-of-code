@@ -1,4 +1,4 @@
-use num::{Float, Num};
+use num::{Float, Num, Signed};
 use std::{fmt::{Debug, Display, Formatter}, ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Rem, RemAssign, Sub, SubAssign}};
 
 
@@ -33,9 +33,9 @@ impl<T> Vec2<T> {
     }
 
     pub fn manhatan(&self) -> T
-    where T: Num + Copy
+    where T: Num + Copy + Signed
     {
-        self.x + self.y
+        self.x.abs() + self.y.abs()
     }
 
     pub fn is_zero(&self) -> bool

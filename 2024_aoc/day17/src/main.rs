@@ -227,18 +227,18 @@ mod tests {
     #[test]
     fn day17_part1_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input), "");
+        assert_eq!(part1(input), "7,1,2,3,2,6,7,2,5".to_string());
     }
 
-    #[test]
-    fn day17_part2_test() {
-        let input = include_str!("../input_test2.txt");
-        assert_eq!(part2(input), 1);
-    }
+    // #[test]
+    // fn day17_part2_test() {
+    //     let input = include_str!("../input_test2.txt");
+    //     assert_eq!(part2(input), 1);
+    // }
 
-    #[test]
-    fn day17_part2_final_test() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
-    }
+    // #[test]
+    // fn day17_part2_final_test() {
+    //     let input = include_str!("../input.txt");
+    //     assert_eq!(part2(input), 1);
+    // }
 }

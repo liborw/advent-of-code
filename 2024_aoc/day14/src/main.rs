@@ -66,10 +66,10 @@ fn eval(robots: &Robots, size: &Vec2<isize> ) -> usize {
     let yh = size.y / 2;
 
     let quadrants = [
-        Rect::new((0, 0),(xh, yh)),
-        Rect::new((xh + 1, 0),(size.x, yh)),
-        Rect::new((0, yh + 1),(xh, size.y)),
-        Rect::new((xh + 1, yh + 1),(size.x, size.y)),
+        Rect::new((0, 0),(xh - 1, yh - 1)),
+        Rect::new((xh + 1, 0),(size.x - 1, yh - 1)),
+        Rect::new((0, yh + 1),(xh - 1, size.y - 1)),
+        Rect::new((xh + 1, yh + 1),(size.x - 1, size.y - 1)),
     ];
     println!("{quadrants:?}");
 

@@ -12,6 +12,6 @@ pub use took::took;
 macro_rules! run_task {
     ($f:expr) => {
         let (took, result) = took($f);
-        println!("{} took: {} result: {}", stringify!($f), took, result);
+        println!("{} took: {} result: {:?}", stringify!($f), took, result);
     };
 }

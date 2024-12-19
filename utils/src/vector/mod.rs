@@ -26,7 +26,7 @@ impl<T: Num + Copy> Rect<T> {
     pub fn is_inside(&self, vec: Vec2<T>) -> bool
     where T: PartialOrd
     {
-        self.min.x <= vec.x && vec.x < self.max.x && self.min.y <= vec.y && vec.y < self.max.y
+        self.min.x <= vec.x && vec.x <= self.max.x && self.min.y <= vec.y && vec.y <= self.max.y
     }
 }
 

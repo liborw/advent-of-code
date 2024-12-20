@@ -1,4 +1,4 @@
-use num::{Float, Num, Signed};
+use num::{traits::float::TotalOrder, Float, Num, Signed};
 use std::{fmt::{Debug, Display, Formatter}, ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Rem, RemAssign, Sub, SubAssign}};
 
 

@@ -1,7 +1,7 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use itertools::Itertools;
-use pathfinding::{num_traits::{CheckedNeg, CheckedSub}, prelude::{astar, build_path, dijkstra_all}};
+use pathfinding::prelude::{build_path, dijkstra_all};
 use utils::{direction::Direction, map::{Map, SparseMap, Vec2}, run_task, took};
 
 fn main() {
@@ -51,15 +51,17 @@ fn all_in_range(pos: Vec2, radius: isize) -> Vec<Vec2> {
 }
 
 
-fn solve(mut map: SparseMap<char>, t_cheat: usize) -> HashMap<usize, usize> {
+fn solve(map: SparseMap<char>, t_cheat: usize) -> HashMap<usize, usize> {
     let start = map.find_all(|c| c == 'S').next().unwrap();
     let target = map.find_all(|c| c == 'E').next().unwrap();
 
-    let costs = dijkstra_all(&target, |n| successors(n, &map));
+    let mut costs = dijkstra_all(&target, |n| successors(n, &map));
     let base_cost = costs.get(&start).unwrap().1;
 
     let mut cheats = HashMap::new();
     let mut path = build_path(&start, &costs);
+
+    costs.insert(target, (target, 0));
     path.reverse();
 
     for (i, start) in path.into_iter().enumerate() {
@@ -86,11 +88,6 @@ fn part2(input: &str) -> usize {
     let map = parse(input);
     map.print('.');
     let cheats = solve(map, 20);
-
-    for k in cheats.keys().sorted() {
-        println!("{k} -> {}", cheats.get(k).unwrap());
-    }
-
     cheats.into_iter().filter_map(|(k, v)| (k >= 100).then_some(v)).sum()
 }
 
@@ -98,27 +95,27 @@ fn part2(input: &str) -> usize {
 mod tests {
     use super::*;
 
-    #[test]
-    fn day20_part1_test() {
-        let input = include_str!("../input_test.txt");
-        assert_eq!(part1(input), 1);
-    }
-
     //#[test]
-    //fn day20_part1_final_test() {
-    //    let input = include_str!("../input.txt");
-    //    assert_eq!(part1(input), 1296);
+    //fn day20_part1_test() {
+    //    let input = include_str!("../input_test.txt");
+    //    assert_eq!(part1(input), 1);
     //}
 
     #[test]
-    fn day20_part2_test() {
-        let input = include_str!("../input_test.txt");
-        assert_eq!(part2(input), 1);
+    fn day20_part1_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part1(input), 1296);
     }
+
+    //#[test]
+    //fn day20_part2_test() {
+    //    let input = include_str!("../input_test.txt");
+    //    assert_eq!(part2(input), 1);
+    //}
 
     #[test]
     fn day20_part2_final_test() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
+        assert_eq!(part2(input), 977665);
     }
 }

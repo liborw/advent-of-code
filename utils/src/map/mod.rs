@@ -9,11 +9,19 @@ pub type SparseMap<T> = HashMap<Vec2, T>;
 pub trait Map<T> {
     fn copy_map(&self, elem_f: impl Fn(&T) -> Option<T>) -> Self;
     fn bounds(&self) -> Rect<isize>;
-    fn print(&self, bg: char);
     fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>);
     fn map_print_with_bounds(&self, bg: char, bounds: &Rect<isize>, elem_f: impl Fn(&T) -> char);
     fn from_str(input: &str, elem_fn: &dyn Fn(char) -> Option<T>) -> SparseMap<T>;
     fn find_all(&self, predicate: impl Fn(T) -> bool) -> impl Iterator<Item=Vec2>;
+
+    fn find_first(&self, predicate: impl Fn(T) -> bool) -> Option<Vec2> {
+        self.find_all(predicate).next()
+    }
+
+    fn print(&self, bg: char) {
+        let b = self.bounds();
+        self.print_with_bounds(bg, &b);
+    }
 }
 
 
@@ -46,11 +54,6 @@ impl<T: Display + Copy> Map<T> for SparseMap<T> {
         });
 
         b
-    }
-
-    fn print(&self, bg: char) {
-        let b = self.bounds();
-        self.print_with_bounds(bg, &b);
     }
 
     fn print_with_bounds(&self, bg: char, bounds: &Rect<isize>) {

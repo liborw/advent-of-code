@@ -2,7 +2,6 @@ use std::ops::BitXor;
 
 use itertools::Itertools;
 use utils::{took, run_task};
-use rayon::prelude::*;
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -49,6 +48,20 @@ impl Computer {
             }
         }
         vec
+    }
+
+    fn run_with_rega(&self, rega: usize) -> Vec<u8> {
+        let mut computer = self.clone();
+        computer.reg_a = rega;
+        computer.run()
+    }
+
+    fn find_all_ins(&self, ins: u8) -> Vec<(u8, u8)> {
+        self.prog
+            .as_slice()
+            .chunks(2)
+            .filter_map(|chunk| (chunk[0] == ins).then_some((chunk[0], chunk[1])))
+            .collect()
     }
 
     fn step(&mut self) -> Result<Option<u8>, ()> {
@@ -129,6 +142,7 @@ impl Computer {
         };
         Ok(v)
     }
+
 }
 
 fn adv(a: usize, b:usize) -> usize {
@@ -167,12 +181,24 @@ fn part1(input: &str) -> String {
 
 fn part2(input: &str) -> usize {
     let computer = parse(input);
+    let n = computer.prog.len() as u32;
+    let adv: Vec<(u8, u8)> = computer.find_all_ins(0);
+    let base = 2_usize.pow(adv[0].1 as u32);
 
-    (1..1000000000000).into_par_iter().find_any(|a| {
-        let mut c = computer.clone();
-        c.reg_a = *a;
-        computer.prog == c.run()
-    }).unwrap()
+    (0..n)
+        .fold(0, |v, i| {
+            let target = computer.prog[(n - i - 1) as usize];
+            let mut  u = v * base;
+            let to = u * base - 1;
+            println!("{i}: {}..{}", u, to);
+            u = (u..to)
+                .find(|&a| {
+                    let out = computer.run_with_rega(a);
+                    out[0] == target
+                }).unwrap();
+            println!("{u}: {:?} ?= {}", computer.run_with_rega(u), target);
+            u
+        })
 }
 
 #[cfg(test)]
@@ -230,15 +256,15 @@ mod tests {
         assert_eq!(part1(input), "7,1,2,3,2,6,7,2,5".to_string());
     }
 
-    // #[test]
-    // fn day17_part2_test() {
-    //     let input = include_str!("../input_test2.txt");
-    //     assert_eq!(part2(input), 1);
-    // }
+    #[test]
+    fn day17_part2_test() {
+        let input = include_str!("../input_test2.txt");
+        assert_eq!(part2(input), 117440);
+    }
 
-    // #[test]
-    // fn day17_part2_final_test() {
-    //     let input = include_str!("../input.txt");
-    //     assert_eq!(part2(input), 1);
-    // }
+    #[test]
+    fn day17_part2_final_test() {
+        let input = include_str!("../input.txt");
+        assert_eq!(part2(input), 202356708354602);
+    }
 }

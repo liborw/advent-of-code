@@ -273,7 +273,7 @@ impl Robot {
         let m = key.into();
         self.pos = self.pos.advance(m);
         if m == Move::Press {
-            self.keypad.map.get(&self.pos).map(|&c| c.into())
+            self.keypad.map.get(&self.pos).copied()
         } else {
             None
         }

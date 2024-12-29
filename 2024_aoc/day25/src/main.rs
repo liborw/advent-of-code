@@ -3,7 +3,6 @@ use utils::{took, run_task};
 fn main() {
     let input = include_str!("../input.txt");
     run_task!(|| part1(input));
-    run_task!(|| part2(input));
 }
 
 fn parse(input: &str) -> (Vec<[usize; 5]>, Vec<[usize; 5]>) {
@@ -59,10 +58,6 @@ fn part1(input: &str) -> usize {
     n
 }
 
-fn part2(input: &str) -> usize {
-    0
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -77,17 +72,5 @@ mod tests {
     fn day25_part1_final_test() {
         let input = include_str!("../input.txt");
         assert_eq!(part1(input), 3451);
-    }
-
-    #[test]
-    fn day25_part2_test() {
-        let input = include_str!("../input_test.txt");
-        assert_eq!(part2(input), 1);
-    }
-
-    #[test]
-    fn day25_part2_final_test() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part2(input), 1);
     }
 }

@@ -5,6 +5,7 @@ pub mod direction;
 pub mod math;
 pub mod repeat;
 pub mod roman;
+pub mod graph;
 
 pub use took::took;
 
